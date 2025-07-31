@@ -1,0 +1,255 @@
+**Martin is a Y Combinator-backed “Jarvis-style” AI personal assistant you can call, text, email, or ping on Slack/WhatsApp; it learns your preferences and then handles the grunt work—triaging email, booking meetings, setting reminders, drafting texts, even joining phone calls—so you can move twice as fast.**([trymartin.com][1], [docs.trymartin.com][2], [Apple][3], [Y Combinator][4])
+
+## What exactly is Martin?
+
+* A cloud-based AI butler delivered through an iOS app (Android wait-list open) and a web dashboard.([trymartin.com][1], [Apple][3])
+* Reachable on every common channel: phone, SMS, WhatsApp, email, and Slack, so you interact with it the same way you’d ping a human assistant.([docs.trymartin.com][2], [Y Combinator][4])
+* Built by DCWU, Inc. (YC S23) with GPT-4-class models under the hood.([Y Combinator][4], [Capterra][5])
+
+## What does it actually do?
+
+| Daily task                        | How Martin handles it                                                                                                  | Docs/examples                                        |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Inbox triage & drafting**       | Labels / folders messages, summarizes threads, writes replies you can approve.                                         | ([docs.trymartin.com][6], [TechRadar][7])            |
+| **Scheduling**                    | You CC martin@… and it proposes times, juggles conflicts, and drops the event on everyone’s calendar.                  | ([docs.trymartin.com][8])                            |
+| **Reminders, to-dos & briefings** | Quick voice/text command (“remind me Friday 3 PM”) or automated daily/weekly email briefings.                          | ([docs.trymartin.com][9], [AI Agents Directory][10]) |
+| **Calls & texts**                 | Can place calls or send messages to contacts on your behalf (think “text the team I’m running late”).                  | ([Apple][3], [KnowTechie][11])                       |
+| **Proactive help**                | Over time it notices patterns and suggests actions (e.g., “You have an unread bill-pay alert—want me to remind you?”). | ([KnowTechie][11])                                   |
+
+## Access & cost (as of July 2025)
+
+* **Free tier** lets you try basic commands and limited email/calendar integrations.([trymartin.com][1])
+* **Pro plan** unlocks background automations like full email triage and “cc-to-schedule.”([docs.trymartin.com][8], [docs.trymartin.com][6])
+* iOS download is live now; Android and desktop users can use the web app while on the wait-list.([Apple][3], [app.trymartin.com][12])
+
+**Bottom line:** Martin slots into whatever channel you’re already using and quietly picks up repetitive coordination tasks—essentially a 24/7 digital secretary that gets smarter the more you hand off.
+
+[1]: https://www.trymartin.com/?utm_source=chatgpt.com "Martin: Personal Assistant | Your AI like Jarvis (Try for Free)"
+[2]: https://docs.trymartin.com/introduction?utm_source=chatgpt.com "Martin: Introduction"
+[3]: https://apps.apple.com/lv/app/martin-personal-assistant/id6453473083?utm_source=chatgpt.com "Martin AI - Personal Assistant on the App Store"
+[4]: https://www.ycombinator.com/companies/martin?utm_source=chatgpt.com "Martin: AI Personal Assistant like Jarvis - Y Combinator"
+[5]: https://www.capterra.com/p/10023065/Martin/?utm_source=chatgpt.com "Martin Pricing, Alternatives & More 2025 | Capterra"
+[6]: https://docs.trymartin.com/background-tasks/email-triage?utm_source=chatgpt.com "Email Triage - Martin"
+[7]: https://www.techradar.com/pro/i-put-martin-vs-chatgpt-head-to-head-to-find-out-which-is-best-this-is-the-winner?utm_source=chatgpt.com "I put Martin vs. ChatGPT head-to-head to find out which is best"
+[8]: https://docs.trymartin.com/background-tasks/cc-to-schedule?utm_source=chatgpt.com "Cc to Schedule - Martin"
+[9]: https://docs.trymartin.com/background-tasks/briefings?utm_source=chatgpt.com "Email Briefings - Martin - Introduction"
+[10]: https://aiagentsdirectory.com/agent/martin?utm_source=chatgpt.com "Martin - AI Agent Reviews, Features, Use Cases & Alternatives (2025)"
+[11]: https://knowtechie.com/martin-ai-personal-assistant/?utm_source=chatgpt.com "Meet Martin: The AI Assistant Revolutionizing Your Daily Tasks"
+[12]: https://app.trymartin.com/?utm_source=chatgpt.com "Martin"
+
+
+
+Building a “Martin-style” assistant that lives inside Google Workspace is **totally doable**—because nearly every feature you described maps cleanly onto existing Google APIs plus an LLM layer.  Below is a pragmatic blueprint: what to use, how the pieces fit, and a lean MVP roadmap.
+
+## 1 | Feasibility at a Glance
+
+* **All core data lives in Google** (Gmail, Calendar, Tasks), so a single backend can access everything through OAuth 2.0 + a Workspace **service account with domain-wide delegation**.([Google Help][1], [Google for Developers][2])
+* **Inbox triage, drafting, pattern-spotting** are classic LLM use-cases already proven by tools like Superhuman’s Instant Reply (built on OpenAI).([OpenAI][3])
+* Scheduling logic boils down to **Calendar FreeBusy queries** and event inserts.([Google for Developers][4])
+* Reminders plug into the **Google Tasks API**; no extra SaaS needed.([Google for Developers][5], [Google for Developers][6])
+* Everything can run stateless on **Cloud Run** behind a REST/WebSocket API, keeping ops minimal.([Google Cloud][7])
+
+## 2 | Reference Architecture
+
+### 2.1 Backend Service (“Brain”)
+
+| Layer              | Tech                                                  | Purpose                                                                                                                         |
+| ------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Webhook intake** | Cloud Run (Python / Node)                             | Receives Gmail push notices, slash-commands, UI calls.                                                                          |
+| **Auth**           | Service account + domain-wide delegation              | Acts on any *@cmacroofing.com* mailbox without per-user re-auth.([Google Help][1])                                              |
+| **Data APIs**      | Gmail, Calendar, Tasks, People                        | Read/modify email, events, tasks, contacts.([Google for Developers][8], [Google for Developers][4], [Google for Developers][5]) |
+| **LLM**            | OpenAI (function-calling) **or** Gemini via Vertex AI | Classification, summarization, draft generation, intent parsing.([OpenAI][3], [Google Cloud][9])                                |
+| **Persistence**    | Firestore / Datastore                                 | Store user preferences, embeddings, interaction logs.                                                                           |
+| **Real-time**      | Pub/Sub → WebSocket                                   | Push status back to the React UI.                                                                                               |
+
+### 2.2 Web Front End
+
+* **Next.js or Remix** with Google OAuth for user login.
+* Dashboards for “Today’s triage,” pending drafts, task list, and proactive suggestions.
+* You could also package it as a **Workspace Add-on** later (same code; Google renders it inside Gmail/Calendar).([Google for Developers][10])
+
+## 3 | Feature How-Tos
+
+#### 3.1 Inbox Triage & Drafting
+
+1. Enable **Gmail push notifications** (`users.watch`) so the backend is pinged on new mail.([Google for Developers][8], [Google for Developers][11])
+2. Pull the message, embed meta-features (thread length, sender, labels).
+3. Call the LLM: *“Classify urgency, suggest label, draft 1-sentence summary & 3 reply options.”* (OpenAI works great here; keep Gemini in reserve for tighter Google integration).
+4. Store results; surface them in UI and optionally auto-apply labels or drafts.
+
+#### 3.2 Scheduler (“CC Martin”)
+
+1. Parse inbound threads for date/time language via LLM.
+2. Use **`freeBusy.query`** to check everyone’s calendars.([Google for Developers][4])
+3. Pick candidate slots, create events with the **Calendar API** and send replies from `martin@cmacroofing.com`.
+
+#### 3.3 Reminders & To-Dos
+
+* Map “remind me …” or proactive nudges into **Google Tasks** entries.([Google for Developers][5])
+* Offer quick-add in UI; optionally send Slack/Chat notifications later.
+
+#### 3.4 Proactive Help Engine
+
+* Nightly job runs LLM on 30-day email/Calendar metadata to spot patterns (unanswered invoices, meetings with no agenda, etc.).
+* Surfaces “Would you like me to…?” cards in the dashboard.  Use Gemini if you want **native Google data-governance & PII scoping**; otherwise stick with OpenAI for maturity and model quality.([IT Pro][12])
+
+## 4 | Security & Compliance
+
+* **Restricted OAuth scopes** (mail.readonly vs full modify).
+* Secrets in **Secret Manager**; no keys in code.
+* Enable **access transparency** logs and VPC-SC if data sensitivity is high.
+
+## 5 | MVP Roadmap (≈ 6 weeks)
+
+1. **Week 1-2** – Set up Cloud Run service, service-account delegation, Gmail watch → log raw events.
+2. **Week 3** – Implement triage classifier + draft using OpenAI; build bare-bones React panel.
+3. **Week 4** – Add Calendar scheduling flow and Tasks integration.
+4. **Week 5** – Proactive suggestion prototype; refine UI/UX.
+5. **Week 6** – Security hardening, unit tests, internal beta.
+
+## 6 | Why It’s Straightforward
+
+Google’s APIs expose every artefact you need; Cloud Run handles scaling; LLMs take care of the heavy reasoning.  Strip out telephony, scope only to Workspace, and you have a lean “mini-Martin” that’s fully within reach for a small dev team—or even a motivated solo builder with your admin access and API keys.
+
+[1]: https://support.google.com/a/answer/162106?hl=en&utm_source=chatgpt.com "Control API access with domain-wide delegation - Google Help"
+[2]: https://developers.google.com/workspace/cloud-search/docs/guides/delegation?utm_source=chatgpt.com "Perform Google Workspace domain-wide delegation of authority"
+[3]: https://openai.com/index/superhuman/?utm_source=chatgpt.com "Superhuman - OpenAI"
+[4]: https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query?utm_source=chatgpt.com "Freebusy: query | Google Calendar"
+[5]: https://developers.google.com/workspace/tasks/reference/rest?utm_source=chatgpt.com "Google Tasks API - Google for Developers"
+[6]: https://developers.google.com/apps-script/advanced/tasks?utm_source=chatgpt.com "Tasks Service | Apps Script - Google for Developers"
+[7]: https://cloud.google.com/run/docs/quickstarts/deploy-container?utm_source=chatgpt.com "Quickstart: Deploy to Cloud Run"
+[8]: https://developers.google.com/workspace/gmail/api/guides/push?utm_source=chatgpt.com "Push Notifications | Gmail - Google for Developers"
+[9]: https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?utm_source=chatgpt.com "Generate content with the Gemini API in Vertex AI - Google Cloud"
+[10]: https://developers.google.com/workspace/add-ons/quickstart/alternate-runtimes?utm_source=chatgpt.com "Build a Google Workspace add-on with Node.js"
+[11]: https://developers.google.com/workspace/gmail/api/reference/rest/v1/users/watch?utm_source=chatgpt.com "Method: users.watch | Gmail - Google for Developers"
+[12]: https://www.itpro.com/cloud/live/google-cloud-next-2025-all-the-news-and-updates-live?utm_source=chatgpt.com "Google Cloud Next 2025: All the live updates as they happened"
+
+
+
+Google Workspace **domain-wide delegation** lets a service account act “on behalf of” any user in your domain—*but only when your code explicitly tells it which user to impersonate.* You, as super-admin, grant that service account one-time authority over chosen API scopes; after that, each API call includes a *subject* value (the target user’s email). The operation then touches **their** mailbox, calendar, or tasks—not yours—and it never re-uses your personal refresh tokens or Gmail settings.([Google Help][1], [Google Help][2], [Google for Developers][3], [google-auth.readthedocs.io][4])
+
+## 1 | What “domain-wide delegation” really means
+
+* You create a **service account** in Google Cloud; it owns a client ID and JSON key.([Google Cloud][5])
+* In the Admin console you add that client ID under **Security → API Controls → Domain-wide delegation**, listing only the Gmail/Calendar/Tasks scopes you need.([Google for Developers][6], [IBM][7])
+* This skips per-user OAuth consent: the service account is now trusted to impersonate any *@cmacroofing.com* user for those scopes.([Google for Developers][8], [docs.metaspike.com][9])
+
+## 2 | How calls get routed to the *right* mailbox
+
+```python
+creds = service_account.Credentials.from_service_account_file(
+    "svc.json",
+    scopes=["https://www.googleapis.com/auth/gmail.modify"],
+    subject="alice@cmacroofing.com"   # <- who to impersonate
+)
+service = build("gmail", "v1", credentials=creds)
+service.users().messages().list(userId="me", q="is:unread").execute()
+```
+
+The `subject` field tells Google “perform this request as Alice.” If you later set `subject="bob@cmacroofing.com"`, the same credentials touch Bob’s inbox instead.([google-auth.readthedocs.io][4])
+
+## 3 | Implications for your tests and rollout
+
+| Scenario                                                               | Whose data is accessed?                | Why                                                                                       |
+| ---------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Local testing with `subject="you@cmacroofing.com"`                     | Yours                                  | You asked to impersonate yourself.                                                        |
+| Colleague logs into the web app; backend sets `subject` to their email | The colleague’s mailbox/calendar       | Service account now acts as them. No extra keys needed.                                   |
+| You forget to pass a `subject`                                         | Service account only (no user mailbox) | Gmail APIs will error because service accounts don’t own mailboxes.([Stack Overflow][10]) |
+
+## 4 | Security & best practices
+
+* **Principle of least scope**: grant only the exact Gmail, Calendar, and Tasks scopes—skip Drive, Contacts, etc.([Google Help][1])
+* **Audit & revoke**: Admin console shows every client ID with delegation; you can remove it any time.([Affinity Help Center][11])
+* **Log who you impersonate**: keep a Firestore record of user-ID ↔ subject mappings and API actions for compliance.([Unit 42][12])
+
+### Bottom line
+
+Your single service-account key unlocks workspace-wide access, **but only to whichever user you impersonate per request**. Once you move from your own tests to colleagues, pass their email as the `subject` and the assistant will act on *their* Gmail, Calendar, and Tasks—never yours.
+
+[1]: https://support.google.com/a/answer/162106?hl=en&utm_source=chatgpt.com "Control API access with domain-wide delegation - Google Help"
+[2]: https://support.google.com/a/answer/14437356?hl=en&utm_source=chatgpt.com "Domain-wide delegation best practices - Google Help"
+[3]: https://developers.google.com/identity/protocols/oauth2/service-account?utm_source=chatgpt.com "Using OAuth 2.0 for Server to Server Applications"
+[4]: https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html?utm_source=chatgpt.com "google.oauth2.service_account module"
+[5]: https://cloud.google.com/iam/docs/service-account-overview?utm_source=chatgpt.com "Service accounts overview | IAM Documentation - Google Cloud"
+[6]: https://developers.google.com/workspace/cloud-search/docs/guides/delegation?utm_source=chatgpt.com "Perform Google Workspace domain-wide delegation of authority"
+[7]: https://www.ibm.com/docs/en/svgaa?topic=i-delegating-domain-wide-authority-service-account&utm_source=chatgpt.com "Delegating domain-wide authority to the service account - IBM"
+[8]: https://developers.google.com/workspace/classroom/guides/key-concepts/domain-wide-delegation?utm_source=chatgpt.com "Domain-wide delegation | Google Classroom"
+[9]: https://docs.metaspike.com/article/39-using-delegation-with-g-suite?utm_source=chatgpt.com "Using Delegation with Google Workspace"
+[10]: https://stackoverflow.com/questions/61915432/google-oauth-using-domain-wide-delegation-and-service-account?utm_source=chatgpt.com "Google OAuth using domain wide delegation and service account"
+[11]: https://support.affinity.co/s/article/How-to-enable-domain-wide-delegation-for-Google-impersonation-Enterprise-only?utm_source=chatgpt.com "How to enable domain-wide delegation for Google impersonation ..."
+[12]: https://unit42.paloaltonetworks.com/critical-risk-in-google-workspace-delegation-feature/?utm_source=chatgpt.com "Exploring a Critical Risk in Google Workspace's Domain-Wide ..."
+
+
+**Yes – adding Slack DMs as the “ping” channel is quick work:** a single Slack bot token plus two API calls (`users.identity` → get the person’s user ID, then `chat.postMessage` or `reminders.add`) lets your backend fire personal-DM reminders at any moment you choose. All the heavy OAuth plumbing is already familiar to you, and nothing conflicts with the Google-side service-account model.
+
+## How the Pieces Fit
+
+### 1. One Slack app → DMs for every employee
+
+1. **Create / reuse a Slack app** in your workspace. Give it the scopes `chat:write` (for `chat.postMessage`), `im:write` (to start DM channels automatically), and *optionally* `reminders:write` if you’d rather let Slack handle recurring reminders. ([Slack API][1], [Slack API][2])
+2. During install you’ll capture a **bot token** (starts with `xoxb-…`). A single bot token can message *any* user in the workspace as long as the app is installed there. ([Slack API][3])
+3. Store that token in **Google Secret Manager**; fetch it at runtime instead of hard-coding. ([Google Cloud][4])
+
+### 2. Identifying the target user
+
+* When a CMAC employee signs in to your assistant’s web UI, also kick off **Slack OAuth** (or ask them to click “Connect Slack”). Store their Slack `user_id` alongside their Google identity.
+* If you prefer zero end-user OAuth, your bot can call `users.identity` with an admin-level user token to map company email → Slack ID, since Workspace emails usually match profile emails. ([Slack API][5])
+
+### 3. Sending the reminder
+
+```python
+slack.post(
+  "chat.postMessage",
+  json={
+      "channel": user_id,          # e.g. U04ABC123
+      "text": "Heads-up: roof inspection with the Smiths starts in 10 min."
+  }
+)
+```
+
+Passing a **user ID** as `channel` automatically drops the message into that person’s DM with your bot. ([Slack API][6], [Stack Overflow][7])
+
+### 4. Scheduling strategies
+
+| Option                                 | How it works                                                                     | Pros                                   | Cons                                                                         |
+| -------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------- |
+| **Backend timer + `chat.postMessage`** | Use Cloud Tasks / Cloud Scheduler to hit your own endpoint at due time, then DM. | Full control; supports rich blocks.    | You manage timing infra.                                                     |
+| **Slack-native `reminders.add`**       | Your bot calls once: `text="Submit daily report"` `time="every day 4pm"`         | Slack tracks recurrence & sends.       | Less formatting; reminders land via @Slackbot, not your DM. ([Slack API][8]) |
+| **Scheduled messages**                 | `chat.scheduleMessage` with a Unix timestamp.                                    | No extra infra; appears from your bot. | One-shot only; reschedule for repeats. ([Slack API][6])                      |
+
+For your “quick nudge” use-case, *scheduled messages* are usually simplest.
+
+### 5. Wiring it into the Google-side workflow
+
+1. When the assistant writes a Google Task (due date or recurrence included) store its `task_id`.
+2. A Cloud Scheduler job (or Firestore event listener) checks for due tasks every minute, converts them to Slack DMs, and marks them “sent.”
+3. For proactive suggestions (“You left three invoices unread…”), generate the card, then immediately DM via the same `chat.postMessage` call.
+
+## Security & Maintenance Tips
+
+* **Least-privilege scopes**: stick to `chat:write`, `im:write`, `reminders:write`; skip `channels:history` or `users:read` unless later needed. ([Slack API][1], [Slack API][2])
+* **Token rotation**: Slack now lets you enable automatic 12-hour rotation; if you turn it on, wire refresh logic into Secret Manager. ([Slack API][9])
+* **Audit logging**: Slack’s Admin panel tracks every bot message; Google Cloud Audit logs track each secret access. Lock both down to admins only. ([Slack API][10])
+
+## Effort Estimate
+
+| Task                                 | Time   |
+| ------------------------------------ | ------ |
+| Slack app creation & scopes          | 30 min |
+| OAuth / identity mapping             | 2–3 h  |
+| Cloud Task → Slack DM lambda         | 3–4 h  |
+| UI toggle (“notify me via Slack”)    | 1 h    |
+| Testing (token rotation, edge cases) | 2 h    |
+
+So, **a single developer can bolt Slack DMs onto your Google-centric assistant in less than a day**, re-using the solid Workspace foundation you already laid out.
+
+[1]: https://api.slack.com/scopes/chat%3Awrite?utm_source=chatgpt.com "chat:write permission scope - Slack API"
+[2]: https://api.slack.com/scopes?utm_source=chatgpt.com "Permission scopes - Slack API"
+[3]: https://api.slack.com/authentication/token-types?utm_source=chatgpt.com "Token types - Slack API"
+[4]: https://cloud.google.com/secret-manager/docs/best-practices?utm_source=chatgpt.com "Secret Manager best practices - Google Cloud"
+[5]: https://api.slack.com/methods/users.identity?utm_source=chatgpt.com "users.identity method - Slack API"
+[6]: https://api.slack.com/methods/chat.postMessage?utm_source=chatgpt.com "chat.postMessage method - Slack API"
+[7]: https://stackoverflow.com/questions/65648612/how-to-get-the-slack-dm-channel-id-of-the-slack-app?utm_source=chatgpt.com "How to get the Slack DM channel ID of the Slack App - Stack Overflow"
+[8]: https://api.slack.com/methods/reminders.add?utm_source=chatgpt.com "reminders.add method - Slack API"
+[9]: https://api.slack.com/authentication/rotation?utm_source=chatgpt.com "Token rotation - Slack API"
+[10]: https://api.slack.com/authentication/best-practices?utm_source=chatgpt.com "Best practices for security - Slack API"
