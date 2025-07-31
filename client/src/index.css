@@ -1,0 +1,333 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  
+  /* Neon color palette */
+  --neon-cyan: hsl(180, 100%, 50%);
+  --neon-magenta: hsl(300, 100%, 50%);
+  --neon-blue: hsl(210, 100%, 56%);
+  --neon-green: hsl(150, 100%, 50%);
+  --neon-purple: hsl(270, 100%, 50%);
+  --neon-pink: hsl(330, 100%, 50%);
+  --neon-yellow: hsl(60, 100%, 50%);
+  
+  /* Glass effect variables */
+  --glass-bg: hsla(240, 10%, 6.7%, 0.7);
+  --glass-border: hsla(0, 0%, 100%, 0.1);
+  
+  /* Dark background variations */
+  --dark-bg: hsl(240, 10%, 3.9%);
+  --dark-card: hsl(240, 10%, 6.7%);
+  --dark-border: hsl(240, 3.7%, 15.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background: radial-gradient(ellipse at top, hsl(240, 10%, 6.7%) 0%, hsl(240, 10%, 3.9%) 50%);
+    min-height: 100vh;
+  }
+  
+  /* Cyber grid background */
+  .cyber-grid {
+    background-image: 
+      linear-gradient(hsla(180, 100%, 50%, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, hsla(180, 100%, 50%, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
+
+@layer components {
+  /* Glass card effect */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px hsla(0, 0%, 0%, 0.3);
+  }
+  
+  /* Neon border animations */
+  .neon-border {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .neon-border::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsla(180, 100%, 50%, 0.3), transparent);
+    animation: scan 3s linear infinite;
+  }
+  
+  /* Neon glow effects */
+  .neon-glow-cyan {
+    box-shadow: 0 0 10px hsl(180, 100%, 50%), 0 0 20px hsl(180, 100%, 50%), 0 0 40px hsl(180, 100%, 50%);
+  }
+  
+  .neon-glow-magenta {
+    box-shadow: 0 0 10px hsl(300, 100%, 50%), 0 0 20px hsl(300, 100%, 50%), 0 0 40px hsl(300, 100%, 50%);
+  }
+  
+  .neon-glow-blue {
+    box-shadow: 0 0 10px hsl(210, 100%, 56%), 0 0 20px hsl(210, 100%, 56%), 0 0 40px hsl(210, 100%, 56%);
+  }
+  
+  .neon-glow-green {
+    box-shadow: 0 0 10px hsl(150, 100%, 50%), 0 0 20px hsl(150, 100%, 50%), 0 0 40px hsl(150, 100%, 50%);
+  }
+  
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(45deg, var(--neon-cyan), var(--neon-magenta), var(--neon-blue), var(--neon-green));
+    background-size: 400% 400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 3s ease infinite;
+  }
+  
+  /* Data flow animation */
+  .data-flow {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .data-flow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    animation: scan 2s linear infinite;
+  }
+  
+  /* Status indicators */
+  .status-online {
+    color: var(--neon-green);
+  }
+  
+  .status-processing {
+    color: var(--neon-blue);
+  }
+  
+  .status-warning {
+    color: var(--neon-yellow);
+  }
+  
+  .status-error {
+    color: var(--neon-magenta);
+  }
+  
+  /* Interactive elements */
+  .neon-button {
+    @apply relative px-6 py-3 bg-transparent border-2 rounded-lg font-semibold transition-all duration-300;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+  }
+  
+  .neon-button-cyan {
+    @apply border-cyan-400 text-cyan-400;
+  }
+  
+  .neon-button-cyan:hover {
+    @apply bg-cyan-400/10 shadow-lg;
+    box-shadow: 0 0 20px hsla(180, 100%, 50%, 0.3);
+  }
+  
+  .neon-button-magenta {
+    @apply border-fuchsia-400 text-fuchsia-400;
+  }
+  
+  .neon-button-magenta:hover {
+    @apply bg-fuchsia-400/10 shadow-lg;
+    box-shadow: 0 0 20px hsla(300, 100%, 50%, 0.3);
+  }
+  
+  .neon-button-green {
+    @apply border-emerald-400 text-emerald-400;
+  }
+  
+  .neon-button-green:hover {
+    @apply bg-emerald-400/10 shadow-lg;
+    box-shadow: 0 0 20px hsla(150, 100%, 50%, 0.3);
+  }
+  
+  .neon-button-blue {
+    @apply border-blue-400 text-blue-400;
+  }
+  
+  .neon-button-blue:hover {
+    @apply bg-blue-400/10 shadow-lg;
+    box-shadow: 0 0 20px hsla(210, 100%, 56%, 0.3);
+  }
+  
+  /* Form inputs */
+  .neon-input {
+    @apply bg-gray-900/50 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+  
+  .neon-input:focus {
+    @apply outline-none ring-2 ring-cyan-400/50 border-cyan-400;
+    box-shadow: 0 0 10px hsla(180, 100%, 50%, 0.2);
+  }
+  
+  /* Loading spinner */
+  .neon-spinner {
+    @apply w-6 h-6 border-2 border-gray-600 border-t-cyan-400 rounded-full animate-spin;
+  }
+  
+  /* Progress bars */
+  .neon-progress {
+    @apply w-full bg-gray-700 rounded-full h-2 overflow-hidden;
+  }
+  
+  .neon-progress-bar {
+    @apply h-full rounded-full transition-all duration-300;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue));
+    box-shadow: 0 0 10px hsla(180, 100%, 50%, 0.5);
+  }
+}
+
+@layer utilities {
+  /* Neon color utilities */
+  .text-neon-cyan { color: var(--neon-cyan); }
+  .text-neon-magenta { color: var(--neon-magenta); }
+  .text-neon-blue { color: var(--neon-blue); }
+  .text-neon-green { color: var(--neon-green); }
+  .text-neon-purple { color: var(--neon-purple); }
+  .text-neon-pink { color: var(--neon-pink); }
+  .text-neon-yellow { color: var(--neon-yellow); }
+  
+  .border-neon-cyan { border-color: var(--neon-cyan); }
+  .border-neon-magenta { border-color: var(--neon-magenta); }
+  .border-neon-blue { border-color: var(--neon-blue); }
+  .border-neon-green { border-color: var(--neon-green); }
+  
+  .bg-neon-cyan\/10 { background-color: hsla(180, 100%, 50%, 0.1); }
+  .bg-neon-magenta\/10 { background-color: hsla(300, 100%, 50%, 0.1); }
+  .bg-neon-blue\/10 { background-color: hsla(210, 100%, 56%, 0.1); }
+  .bg-neon-green\/10 { background-color: hsla(150, 100%, 50%, 0.1); }
+  
+  /* Animation utilities */
+  .animate-pulse-neon {
+    animation: pulse-neon 2s ease-in-out infinite alternate;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-scan {
+    animation: scan 2s linear infinite;
+  }
+}
+
+/* Keyframe animations */
+@keyframes pulse-neon {
+  0% { 
+    box-shadow: 0 0 5px currentColor; 
+  }
+  100% { 
+    box-shadow: 0 0 20px currentColor, 0 0 30px currentColor, 0 0 40px currentColor;
+  }
+}
+
+@keyframes glow {
+  0% { 
+    text-shadow: 0 0 5px currentColor; 
+  }
+  100% { 
+    text-shadow: 0 0 10px currentColor, 0 0 15px currentColor, 0 0 20px currentColor;
+  }
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+@keyframes scan {
+  0% { 
+    transform: translateX(-100%); 
+  }
+  100% { 
+    transform: translateX(100%); 
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { 
+    background-position: 0% 50%; 
+  }
+  50% { 
+    background-position: 100% 50%; 
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(240, 10%, 3.9%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(240, 3.7%, 15.9%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* Selection styling */
+::selection {
+  background: hsla(180, 100%, 50%, 0.3);
+  color: white;
+}

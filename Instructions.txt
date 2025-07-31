@@ -1,0 +1,738 @@
+# AmayAI - Detailed Setup and Usage Instructions
+
+===============================================================================
+                    AMAYAI - AI PERSONAL ASSISTANT SETUP GUIDE
+===============================================================================
+
+This comprehensive guide will walk you through setting up and using AmayAI, 
+your AI-powered personal assistant for Google Workspace. Follow each step 
+carefully to ensure proper configuration and optimal performance.
+
+===============================================================================
+                              TABLE OF CONTENTS
+===============================================================================
+
+1. OVERVIEW & REQUIREMENTS
+2. INITIAL SETUP & CONFIGURATION
+3. GOOGLE WORKSPACE INTEGRATION
+4. OPENAI API CONFIGURATION
+5. SLACK INTEGRATION SETUP
+6. RUNNING THE APPLICATION
+7. USER INTERFACE WALKTHROUGH
+8. FEATURE-BY-FEATURE USAGE GUIDE
+9. TROUBLESHOOTING COMMON ISSUES
+10. ADVANCED CONFIGURATION
+11. SECURITY & PRIVACY CONSIDERATIONS
+12. MAINTENANCE & UPDATES
+
+===============================================================================
+                         1. OVERVIEW & REQUIREMENTS
+===============================================================================
+
+AmayAI is a comprehensive AI personal assistant that integrates with your 
+Google Workspace to automate email management, intelligent scheduling, task 
+organization, and provides proactive suggestions to enhance productivity.
+
+SYSTEM REQUIREMENTS:
+-------------------
+• Node.js 18 or higher
+• Modern web browser (Chrome, Firefox, Safari, Edge)
+• Stable internet connection
+• Google Workspace account (Gmail, Calendar, Tasks access)
+• OpenAI API account with available credits
+• Slack workspace (optional but recommended)
+
+REPLIT ENVIRONMENT:
+------------------
+• PostgreSQL database (automatically provisioned)
+• Node.js runtime environment
+• Environment variable management via Replit Secrets
+• Automatic SSL/TLS certificate handling
+• Domain name assignment (.replit.app)
+
+===============================================================================
+                      2. INITIAL SETUP & CONFIGURATION
+===============================================================================
+
+STEP 1: VERIFY ENVIRONMENT
+-------------------------
+1. Ensure your Replit project is running
+2. Verify PostgreSQL database is available
+3. Check that all necessary packages are installed
+4. Confirm the project structure is intact
+
+STEP 2: CONFIGURE ENVIRONMENT VARIABLES
+--------------------------------------
+Navigate to your Replit project settings and add the following secrets:
+
+REQUIRED SECRETS:
+• OPENAI_API_KEY - Your OpenAI API key for AI processing
+• SLACK_BOT_TOKEN - Slack bot token for notifications (starts with xoxb-)
+• SLACK_CHANNEL_ID - Slack channel ID for notifications (starts with C)
+
+OPTIONAL SECRETS (for full Google integration):
+• GOOGLE_CLIENT_ID - OAuth 2.0 client ID from Google Cloud Console
+• GOOGLE_CLIENT_SECRET - OAuth 2.0 client secret
+• GOOGLE_REDIRECT_URI - OAuth callback URL (auto-configured for Replit)
+
+DATABASE SECRETS (automatically configured):
+• DATABASE_URL - PostgreSQL connection string
+• PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE - Database details
+
+STEP 3: INITIALIZE DATABASE
+---------------------------
+The database schema is automatically created when you first run the application.
+Tables include:
+• users - User profiles and authentication
+• emails - Email processing metadata
+• tasks - Task management data
+• events - Calendar event information
+• suggestions - AI-generated suggestions
+
+===============================================================================
+                      3. GOOGLE WORKSPACE INTEGRATION
+===============================================================================
+
+SETTING UP GOOGLE CLOUD PROJECT:
+--------------------------------
+
+STEP 1: CREATE PROJECT
+1. Go to https://console.cloud.google.com/
+2. Click "Select a project" → "New Project"
+3. Enter project name: "AmayAI-Integration"
+4. Click "Create"
+
+STEP 2: ENABLE APIS
+1. Navigate to "APIs & Services" → "Library"
+2. Search for and enable the following APIs:
+   • Gmail API - For email management
+   • Google Calendar API - For calendar integration
+   • Google Tasks API - For task synchronization
+   • Google+ API - For user profile information
+
+STEP 3: CONFIGURE OAUTH 2.0
+1. Go to "APIs & Services" → "Credentials"
+2. Click "Create Credentials" → "OAuth 2.0 Client ID"
+3. Configure the consent screen:
+   • Application name: "AmayAI Personal Assistant"
+   • User support email: your email
+   • Developer contact: your email
+4. Application type: "Web application"
+5. Name: "AmayAI Web Client"
+6. Authorized redirect URIs:
+   • https://[your-replit-domain].replit.app/auth/google/callback
+   • Replace [your-replit-domain] with your actual Replit domain
+7. Click "Create"
+8. Copy the Client ID and Client Secret
+9. Add these to your Replit Secrets as GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+
+STEP 4: CONFIGURE SCOPES (Advanced)
+For enterprise environments, you may need to configure additional scopes:
+• https://www.googleapis.com/auth/gmail.modify
+• https://www.googleapis.com/auth/calendar
+• https://www.googleapis.com/auth/tasks
+• https://www.googleapis.com/auth/userinfo.email
+• https://www.googleapis.com/auth/userinfo.profile
+
+DOMAIN-WIDE DELEGATION (Enterprise Only):
+----------------------------------------
+For Google Workspace organizations requiring domain-wide delegation:
+
+1. Create a service account in Google Cloud Console
+2. Download the service account key (JSON file)
+3. In Google Workspace Admin Console:
+   • Go to Security → API Controls → Domain-wide Delegation
+   • Add the service account client ID
+   • Add the required OAuth scopes
+4. Store the service account key securely in Replit Secrets
+
+===============================================================================
+                        4. OPENAI API CONFIGURATION
+===============================================================================
+
+CREATING OPENAI ACCOUNT:
+------------------------
+
+STEP 1: ACCOUNT SETUP
+1. Visit https://platform.openai.com/
+2. Sign up for an account or log in
+3. Verify your email address
+4. Complete account verification if required
+
+STEP 2: BILLING CONFIGURATION
+1. Navigate to "Billing" in your OpenAI dashboard
+2. Add a payment method (credit card)
+3. Set up billing alerts to monitor usage
+4. Consider setting spending limits for cost control
+
+STEP 3: API KEY GENERATION
+1. Go to "API Keys" section
+2. Click "Create new secret key"
+3. Name: "AmayAI-Integration"
+4. Copy the generated key (starts with sk-)
+5. Store securely - this key won't be shown again
+6. Add the key to Replit Secrets as OPENAI_API_KEY
+
+USAGE CONSIDERATIONS:
+--------------------
+• GPT-4 is used for email classification and summarization
+• Typical usage: 100-500 tokens per email processed
+• Estimated cost: $0.01-0.05 per email depending on length
+• Monitor usage in OpenAI dashboard to avoid unexpected charges
+• Consider implementing rate limiting for high-volume scenarios
+
+===============================================================================
+                         5. SLACK INTEGRATION SETUP
+===============================================================================
+
+CREATING SLACK APP:
+------------------
+
+STEP 1: APP CREATION
+1. Go to https://api.slack.com/apps
+2. Click "Create New App"
+3. Choose "From scratch"
+4. App Name: "AmayAI Assistant"
+5. Select your workspace
+6. Click "Create App"
+
+STEP 2: CONFIGURE BOT PERMISSIONS
+1. Navigate to "OAuth & Permissions"
+2. Scroll to "Scopes" → "Bot Token Scopes"
+3. Add the following scopes:
+   • chat:write - Send messages
+   • channels:read - Read channel information
+   • users:read - Read user information
+   • files:write - Share files (for reports)
+
+STEP 3: INSTALL APP TO WORKSPACE
+1. Scroll up to "OAuth Tokens for Your Workspace"
+2. Click "Install to Workspace"
+3. Review permissions and click "Allow"
+4. Copy the "Bot User OAuth Token" (starts with xoxb-)
+5. Add this token to Replit Secrets as SLACK_BOT_TOKEN
+
+STEP 4: GET CHANNEL ID
+1. Open your Slack workspace
+2. Navigate to the channel where you want notifications
+3. Right-click on the channel name
+4. Select "Copy link"
+5. Extract the channel ID from the URL:
+   Example: https://yourworkspace.slack.com/archives/C084HL619LG
+   Channel ID: C084HL619LG
+6. Add this ID to Replit Secrets as SLACK_CHANNEL_ID
+
+NOTIFICATION TYPES:
+------------------
+AmayAI will send Slack notifications for:
+• Urgent email alerts requiring immediate attention
+• Meeting reminders 15 minutes before scheduled time
+• Task deadline notifications
+• Weekly productivity summaries
+• System status updates and errors
+
+===============================================================================
+                        6. RUNNING THE APPLICATION
+===============================================================================
+
+DEVELOPMENT MODE:
+----------------
+
+STEP 1: START THE APPLICATION
+1. In your Replit project, the "Start application" workflow should run automatically
+2. If not running, click the "Run" button or use the workflow panel
+3. The command executed is: npm run dev
+4. This starts both backend (Express) and frontend (Vite) servers
+
+STEP 2: VERIFY STARTUP
+Check the console output for:
+✓ "[express] serving on port 5000"
+✓ No error messages about missing environment variables
+✓ Successful database connection
+✓ All required services initialized
+
+STEP 3: ACCESS THE APPLICATION
+1. Click the "Open in New Tab" button in Replit
+2. Or navigate to your assigned .replit.app domain
+3. The application loads with the neon-themed dashboard
+
+PRODUCTION DEPLOYMENT:
+---------------------
+
+STEP 1: BUILD THE APPLICATION
+```bash
+npm run build
+```
+This creates optimized production assets in the dist/ directory.
+
+STEP 2: START PRODUCTION SERVER
+```bash
+npm start
+```
+This serves the built application using the Express server.
+
+STEP 3: DEPLOY TO REPLIT DEPLOYMENTS
+1. Ensure your application is working correctly
+2. Use Replit's deployment feature for production hosting
+3. Configure custom domain if needed
+4. Set up monitoring and health checks
+
+===============================================================================
+                      7. USER INTERFACE WALKTHROUGH
+===============================================================================
+
+MAIN DASHBOARD:
+--------------
+
+HEADER SECTION:
+• AmayAI logo with neon glow effect
+• Connection status indicator (WebSocket)
+• User profile avatar (once authenticated)
+• Quick action buttons
+
+STATISTICS CARDS:
+• Emails Triaged - Count of processed emails with AI classification
+• Meetings Scheduled - Successfully scheduled calendar events
+• Tasks Completed - Finished tasks from Google Tasks
+• AI Suggestions - Generated proactive recommendations
+
+MAIN CONTENT AREAS:
+• Email Triage Panel - Recent email processing results
+• Smart Calendar - Upcoming events and scheduling interface
+• Task Management - Active tasks with priority indicators
+• AI Suggestions - Proactive recommendations and insights
+
+QUICK ACTIONS SIDEBAR:
+• Triage Emails - Manual email processing trigger
+• Schedule Meeting - Quick meeting creation interface
+• Add Task - Rapid task creation
+• Generate Report - Productivity analytics
+
+DESIGN ELEMENTS:
+• Neon cyan (#00ffff) and electric blue (#0080ff) color scheme
+• Glassmorphism cards with backdrop blur effects
+• Smooth animations and hover effects
+• Responsive grid layout adapting to screen size
+• Dark theme optimized for extended use
+
+===============================================================================
+                   8. FEATURE-BY-FEATURE USAGE GUIDE
+===============================================================================
+
+EMAIL TRIAGE SYSTEM:
+-------------------
+
+AUTOMATIC PROCESSING:
+• Gmail webhooks trigger real-time email analysis
+• GPT-4 classifies emails as: Urgent, Normal, Low Priority, Spam
+• Automatic summarization of email content
+• Reply suggestions generated for quick responses
+
+MANUAL TRIAGE:
+1. Click "Triage Emails" in the quick actions panel
+2. System fetches recent unread emails from Gmail
+3. AI processes each email and provides:
+   • Priority classification with colored indicators
+   • Content summary (2-3 sentences)
+   • Suggested actions (Reply, Schedule, Task, Archive)
+   • Sentiment analysis of email tone
+
+REPLY SUGGESTIONS:
+1. Click on any processed email
+2. Review AI-generated reply options
+3. Edit the suggested response as needed
+4. Click "Send Reply" (requires user approval)
+5. Email is marked as processed in your Gmail
+
+SMART CALENDAR MANAGEMENT:
+-------------------------
+
+CC-TO-SCHEDULE FEATURE:
+• AI detects scheduling requests in emails
+• Automatically creates calendar event drafts
+• Checks availability using FreeBusy API
+• Sends calendar invitations to participants
+
+MANUAL SCHEDULING:
+1. Click "Schedule Meeting" 
+2. Enter meeting details:
+   • Title and description
+   • Participant email addresses
+   • Preferred date/time range
+   • Meeting duration
+3. System checks availability for all participants
+4. Suggests optimal time slots
+5. Creates calendar event and sends invites
+
+CONFLICT RESOLUTION:
+• Automatic detection of scheduling conflicts
+• Alternative time slot suggestions
+• Priority-based conflict resolution
+• Integration with multiple calendar accounts
+
+TASK MANAGEMENT:
+---------------
+
+GOOGLE TASKS INTEGRATION:
+• Bidirectional sync with Google Tasks
+• Real-time updates across all devices
+• Task completion tracking
+• Due date management
+
+CREATING TASKS:
+1. Click "Add Task" in quick actions
+2. Enter task details:
+   • Title and description
+   • Due date and time
+   • Priority level (High, Medium, Low)
+   • Related project or context
+3. Task is created in both AmayAI and Google Tasks
+4. Automatic Slack reminders set based on due date
+
+AI-POWERED TASK CREATION:
+• Tasks automatically created from email content
+• Meeting action items converted to tasks
+• Context-aware task suggestions
+• Smart due date estimation
+
+AI SUGGESTION ENGINE:
+--------------------
+
+PROACTIVE RECOMMENDATIONS:
+• Follow-up suggestions for email threads
+• Meeting preparation recommendations
+• Task prioritization advice
+• Workflow optimization tips
+
+PATTERN RECOGNITION:
+• Analyzes email and calendar patterns
+• Identifies productivity bottlenecks
+• Suggests routine optimizations
+• Recommends time blocking strategies
+
+ACCEPTING SUGGESTIONS:
+1. Review suggestion in the AI Suggestions panel
+2. Read the detailed explanation and rationale
+3. Click "Accept" to implement the suggestion
+4. Or click "Dismiss" if not relevant
+5. Provide feedback to improve future suggestions
+
+===============================================================================
+                    9. TROUBLESHOOTING COMMON ISSUES
+===============================================================================
+
+APPLICATION WON'T START:
+-----------------------
+
+ERROR: "SLACK_BOT_TOKEN environment variable must be set"
+SOLUTION:
+1. Verify SLACK_BOT_TOKEN is added to Replit Secrets
+2. Ensure the token starts with "xoxb-"
+3. Restart the application workflow
+4. Check console for other missing environment variables
+
+ERROR: "Database connection failed"
+SOLUTION:
+1. Verify DATABASE_URL is present in environment
+2. Check PostgreSQL database status in Replit
+3. Wait 30 seconds and restart the application
+4. Contact Replit support if database issues persist
+
+GOOGLE AUTHENTICATION ISSUES:
+-----------------------------
+
+ERROR: "redirect_uri_mismatch"
+SOLUTION:
+1. Check Google Cloud Console OAuth configuration
+2. Ensure redirect URI matches your Replit domain exactly
+3. URI format: https://[domain].replit.app/auth/google/callback
+4. Remove any trailing slashes or extra characters
+
+ERROR: "Access denied" during OAuth
+SOLUTION:
+1. Verify all required APIs are enabled in Google Cloud Console
+2. Check OAuth consent screen configuration
+3. Ensure scopes match those requested by the application
+4. Try using an incognito/private browser window
+
+OPENAI API ISSUES:
+-----------------
+
+ERROR: "Insufficient quota" or "Rate limit exceeded"
+SOLUTION:
+1. Check OpenAI dashboard for usage limits
+2. Verify billing information is up to date
+3. Consider upgrading your OpenAI plan
+4. Implement request queuing for high-volume scenarios
+
+ERROR: "Invalid API key"
+SOLUTION:
+1. Verify OPENAI_API_KEY format (starts with sk-)
+2. Check if the key has been revoked in OpenAI dashboard
+3. Generate a new API key if necessary
+4. Ensure no extra spaces or characters in the key
+
+SLACK INTEGRATION PROBLEMS:
+--------------------------
+
+ERROR: "Slack notifications not working"
+SOLUTION:
+1. Verify SLACK_BOT_TOKEN and SLACK_CHANNEL_ID are correct
+2. Check bot permissions in Slack app configuration
+3. Ensure the bot is added to the target channel
+4. Test with a simple message first
+
+ERROR: "Channel not found"
+SOLUTION:
+1. Verify SLACK_CHANNEL_ID format (starts with C)
+2. Ensure the bot has access to the channel
+3. Check if the channel still exists
+4. Try using a public channel for testing
+
+UI/DISPLAY ISSUES:
+-----------------
+
+PROBLEM: "Neon effects not displaying"
+SOLUTION:
+1. Verify your browser supports CSS backdrop-filter
+2. Update to the latest browser version
+3. Disable browser extensions that modify CSS
+4. Clear browser cache and reload
+
+PROBLEM: "Dashboard not updating in real-time"
+SOLUTION:
+1. Check WebSocket connection status in browser developer tools
+2. Verify firewall/network allows WebSocket connections
+3. Refresh the page to re-establish connection
+4. Check console for WebSocket error messages
+
+===============================================================================
+                        10. ADVANCED CONFIGURATION
+===============================================================================
+
+CUSTOMIZING AI BEHAVIOR:
+-----------------------
+
+EMAIL CLASSIFICATION TUNING:
+• Modify classification prompts in server/services/openai.ts
+• Adjust priority thresholds based on your preferences
+• Add custom classification categories
+• Fine-tune response templates
+
+NOTIFICATION PREFERENCES:
+• Configure Slack notification frequency
+• Set up different channels for different alert types
+• Customize notification message formats
+• Add SMS notifications via additional integrations
+
+PERFORMANCE OPTIMIZATION:
+------------------------
+
+DATABASE OPTIMIZATION:
+• Monitor database query performance
+• Add indexes for frequently queried columns
+• Implement connection pooling optimization
+• Set up database monitoring and alerts
+
+API RATE LIMITING:
+• Implement request queuing for OpenAI API calls
+• Add caching for frequently accessed data
+• Set up retry logic with exponential backoff
+• Monitor API usage and costs
+
+SECURITY HARDENING:
+-------------------
+
+ACCESS CONTROL:
+• Implement user roles and permissions
+• Add IP whitelisting for admin functions
+• Set up audit logging for sensitive operations
+• Enable two-factor authentication
+
+DATA ENCRYPTION:
+• Ensure all API keys are properly encrypted
+• Implement data encryption at rest
+• Use HTTPS for all communications
+• Regular security audits and updates
+
+SCALING CONSIDERATIONS:
+----------------------
+
+HORIZONTAL SCALING:
+• Implement load balancing for multiple instances
+• Set up database read replicas
+• Use Redis for session management
+• Implement distributed caching
+
+MONITORING AND ALERTING:
+• Set up application performance monitoring
+• Implement health checks and uptime monitoring
+• Configure alerts for error rates and response times
+• Regular backup and disaster recovery procedures
+
+===============================================================================
+                    11. SECURITY & PRIVACY CONSIDERATIONS
+===============================================================================
+
+DATA PROTECTION:
+---------------
+
+GOOGLE WORKSPACE DATA:
+• Email content is processed server-side only
+• No permanent storage of email content
+• User maintains full control over Google account access
+• Tokens are encrypted and stored securely
+
+OPENAI DATA HANDLING:
+• Email content sent to OpenAI for processing
+• OpenAI data retention policies apply
+• Consider using OpenAI's zero data retention options
+• Review OpenAI's privacy policy for compliance
+
+SLACK COMMUNICATIONS:
+• Bot tokens have limited permissions
+• Only sends notifications to specified channels
+• No storage of Slack message history
+• User controls notification preferences
+
+COMPLIANCE:
+----------
+
+GDPR COMPLIANCE:
+• Users can request data deletion
+• Clear data processing disclosures
+• Opt-in consent for all integrations
+• Right to data portability
+
+BUSINESS COMPLIANCE:
+• Audit trails for all system actions
+• Data classification and handling policies
+• Regular security assessments
+• Compliance reporting capabilities
+
+ACCESS CONTROLS:
+---------------
+
+AUTHENTICATION:
+• OAuth 2.0 with Google for secure authentication
+• No password storage or management
+• Session timeout and management
+• Secure token handling
+
+AUTHORIZATION:
+• Principle of least privilege
+• Role-based access control
+• API endpoint protection
+• Resource-level permissions
+
+===============================================================================
+                        12. MAINTENANCE & UPDATES
+===============================================================================
+
+REGULAR MAINTENANCE:
+-------------------
+
+DAILY TASKS:
+• Monitor application performance and errors
+• Check API usage and costs
+• Review system logs for issues
+• Verify all integrations are functioning
+
+WEEKLY TASKS:
+• Update dependencies and security patches
+• Review and optimize database performance
+• Analyze usage patterns and optimization opportunities
+• Backup configuration and data
+
+MONTHLY TASKS:
+• Review and update API keys and tokens
+• Performance analysis and optimization
+• Security audit and vulnerability assessment
+• Feature usage analysis and improvements
+
+UPDATE PROCEDURES:
+-----------------
+
+CODE UPDATES:
+1. Test changes in development environment
+2. Review all dependencies for security updates
+3. Run comprehensive tests before deployment
+4. Deploy during low-usage periods
+5. Monitor for issues after deployment
+
+DEPENDENCY UPDATES:
+1. Review changelog for breaking changes
+2. Update one dependency at a time
+3. Test thoroughly after each update
+4. Rollback plan in case of issues
+5. Document all changes
+
+MONITORING AND ALERTS:
+---------------------
+
+SYSTEM HEALTH:
+• Application uptime and response times
+• Database performance and connection health
+• API rate limits and error rates
+• WebSocket connection stability
+
+BUSINESS METRICS:
+• Email processing success rates
+• User engagement and feature usage
+• Cost analysis and optimization opportunities
+• Feature effectiveness and user satisfaction
+
+BACKUP AND RECOVERY:
+-------------------
+
+DATA BACKUP:
+• Daily automated database backups
+• Configuration backup and version control
+• API key and secret management
+• Documentation and runbook maintenance
+
+DISASTER RECOVERY:
+• Recovery time objectives (RTO) planning
+• Recovery point objectives (RPO) planning
+• Regular recovery procedure testing
+• Cross-region backup storage
+
+SUPPORT AND DOCUMENTATION:
+--------------------------
+
+USER SUPPORT:
+• Comprehensive help documentation
+• Video tutorials and walkthroughs
+• Community forums and discussion
+• Direct support channels
+
+DEVELOPER RESOURCES:
+• API documentation and examples
+• Integration guides and best practices
+• Troubleshooting guides and FAQs
+• Code examples and templates
+
+===============================================================================
+                                CONCLUSION
+===============================================================================
+
+AmayAI represents a sophisticated integration of artificial intelligence with 
+productivity tools to create a truly intelligent personal assistant. By 
+following these detailed instructions, you'll have a fully functional system 
+that can significantly enhance your productivity and streamline your daily 
+workflow.
+
+Remember to:
+• Regularly monitor system performance and costs
+• Keep all integrations and dependencies updated
+• Provide feedback to improve AI suggestions and features
+• Take advantage of new features and capabilities as they become available
+
+For additional support, refer to the README.md file, check the project 
+repository for updates, or reach out through the established support channels.
+
+Thank you for choosing AmayAI as your AI-powered productivity partner!
+
+===============================================================================
+                              END OF INSTRUCTIONS
+===============================================================================
