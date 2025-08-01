@@ -96,8 +96,12 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <GlassCard className="p-8 max-w-md w-full mx-4">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-neon-cyan to-neon-magenta rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse-neon">
-              <Bot className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-neon-cyan/50 shadow-lg shadow-neon-cyan/25 mx-auto mb-4 animate-pulse-neon">
+              <img 
+                src="/amayai-logo.png" 
+                alt="AmayAI Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <h1 className="text-2xl font-bold gradient-text mb-4">Welcome to AmayAI</h1>
             <p className="text-gray-300 mb-6">
@@ -124,8 +128,12 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-neon-cyan to-neon-magenta rounded-lg flex items-center justify-center animate-pulse-neon">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-lg overflow-hidden border border-neon-cyan/50 shadow-sm shadow-neon-cyan/25 animate-pulse-neon">
+                  <img 
+                    src="/amayai-logo.png" 
+                    alt="AmayAI Logo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <h1 className="text-xl font-bold gradient-text">AmayAI</h1>
               </div>
