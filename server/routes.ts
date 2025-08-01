@@ -913,5 +913,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Archive email endpoint for full-page email triage
+  app.post('/api/emails/archive', async (req, res) => {
+    try {
+      const { messageId } = req.body;
+      
+      // In a real implementation, this would archive the email via Gmail API
+      // For now, we'll simulate success
+      res.json({ 
+        success: true, 
+        message: 'Email archived successfully',
+        messageId 
+      });
+    } catch (error) {
+      console.error('Error archiving email:', error);
+      res.status(500).json({ error: 'Failed to archive email' });
+    }
+  });
+
   return httpServer;
 }

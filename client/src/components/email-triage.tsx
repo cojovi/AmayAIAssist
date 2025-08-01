@@ -3,8 +3,10 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
-import { Inbox, Bot, Check, Edit2, Calendar, Clock } from "lucide-react";
+import { Inbox, Bot, Check, Edit2, Calendar, Clock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Link } from "wouter";
 
 interface EmailTriage {
   id: string;
@@ -21,6 +23,8 @@ interface EmailTriage {
 export function EmailTriage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
+  const emailsPerPage = 6;
 
   const { data: emails = [], isLoading, refetch } = useQuery<EmailTriage[]>({
     queryKey: ["/api/emails/triage"],
@@ -80,6 +84,15 @@ export function EmailTriage() {
     replyMutation.mutate({ messageId, replyType });
   };
 
+  // Calculate pagination
+  const totalPages = Math.ceil(emails.length / emailsPerPage);
+  const startIndex = (currentPage - 1) * emailsPerPage;
+  const displayedEmails = emails.slice(startIndex, startIndex + emailsPerPage);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
   return (
     <GlassCard className="p-6 border border-neon-green/30 flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
@@ -87,9 +100,19 @@ export function EmailTriage() {
           <Inbox className="mr-3 text-neon-green animate-glow" />
           Email Triage & Drafts
         </h3>
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
-          <span className="text-sm text-gray-400">Live monitoring</span>
+        <div className="flex items-center space-x-4">
+          <Link 
+            href="/email-triage" 
+            className="flex items-center gap-2 text-sm text-neon-cyan hover:text-neon-cyan/80 transition-colors"
+            data-testid="button-full-page-triage"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Full Page View
+          </Link>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
+            <span className="text-sm text-gray-400">Live monitoring</span>
+          </div>
         </div>
       </div>
 
@@ -104,7 +127,7 @@ export function EmailTriage() {
             <p className="text-gray-400">No emails to triage</p>
           </div>
         ) : (
-          emails.map((email) => (
+          displayedEmails.map((email) => (
             <div 
               key={email.id}
               className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 hover:border-neon-green/50 transition-all duration-300"
@@ -215,6 +238,57 @@ export function EmailTriage() {
           </div>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {emails.length > emailsPerPage && (
+        <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+          <div className="text-sm text-gray-400">
+            Showing {startIndex + 1}-{Math.min(startIndex + emailsPerPage, emails.length)} of {emails.length} emails
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10"
+              data-testid="button-prev-page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
+              return (
+                <Button
+                  key={pageNum}
+                  size="sm"
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  onClick={() => goToPage(pageNum)}
+                  className={currentPage === pageNum 
+                    ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan/50" 
+                    : "border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10"
+                  }
+                  data-testid={`button-page-${pageNum}`}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10"
+              data-testid="button-next-page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </GlassCard>
   );
 }
