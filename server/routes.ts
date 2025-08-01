@@ -84,10 +84,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Redirect to dashboard with success
-      res.redirect('/?auth=success');
+      res.redirect('/dashboard?auth=success');
     } catch (error) {
       console.error('OAuth callback error:', error);
-      res.redirect('/?auth=error');
+      res.redirect('/login?auth=error');
     }
   });
 

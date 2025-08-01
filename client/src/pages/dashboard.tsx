@@ -32,35 +32,17 @@ export default function Dashboard() {
   // WebSocket connection for real-time updates
   const { lastMessage, isConnected } = useWebSocket(user?.id);
 
-  // Check authentication status
-  const { data: authStatus, isLoading: authLoading, error: authError } = useQuery({
-    queryKey: ["/api/auth/status"],
-    retry: false,
-    refetchInterval: false,
-  });
-
-  // Fetch user profile only if authenticated
+  // Fetch user profile
   const { data: userProfile, isLoading: userLoading } = useQuery({
     queryKey: ["/api/user/profile"],
-    enabled: (authStatus as any)?.authenticated === true,
     refetchInterval: false,
   });
 
-  // Fetch system stats only if authenticated
+  // Fetch system stats
   const { data: systemStats } = useQuery({
     queryKey: ["/api/stats"],
-    enabled: (authStatus as any)?.authenticated === true,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && (authError || !(authStatus as any)?.authenticated)) {
-      console.log('Authentication failed, redirecting to login');
-      navigate('/login');
-      return;
-    }
-  }, [authStatus, authLoading, authError, navigate]);
 
   useEffect(() => {
     if (userProfile) {
@@ -99,21 +81,8 @@ export default function Dashboard() {
     }
   }, [lastMessage]);
 
-  const handleGoogleAuth = () => {
-    window.location.href = '/api/auth/google';
-  };
-
-  // Show loading while checking authentication
-  if (authLoading || userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="neon-spinner"></div>
-      </div>
-    );
-  }
-
-  // If not authenticated, show loading while redirect happens
-  if (!(authStatus as any)?.authenticated || !user) {
+  // Show loading while fetching user data
+  if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="neon-spinner"></div>

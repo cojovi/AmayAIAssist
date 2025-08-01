@@ -39,9 +39,12 @@ export function LoginPage() {
       } else {
         alert('Authentication failed. Please try again.');
       }
-    } else {
-      checkAuth();
+      // Clear URL parameters after showing error
+      window.history.replaceState({}, '', '/login');
     }
+    
+    // Always check auth status on page load
+    checkAuth();
   }, [navigate]);
 
   const handleGoogleLogin = () => {
