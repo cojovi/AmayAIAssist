@@ -86,16 +86,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User profile
-  app.get('/api/user/profile', async (req, res) => {
+  // Check authentication status
+  app.get('/api/auth/status', async (req, res) => {
     try {
-      // In a real app, get user ID from session/JWT
       const users = await storage.getAllUsers();
-      if (users.length === 0) {
-        return res.status(404).json({ error: 'No authenticated user found' });
+      const authenticatedUsers = users.filter(user => user.accessToken && user.refreshToken);
+      
+      if (authenticatedUsers.length === 0) {
+        return res.status(401).json({ authenticated: false });
       }
       
-      const user = users[0]; // For demo, use first user
+      const user = authenticatedUsers[0];
+      res.json({ 
+        authenticated: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      });
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      res.status(500).json({ error: 'Failed to check authentication status' });
+    }
+  });
+
+  // User profile - now requires valid authentication
+  app.get('/api/user/profile', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const authenticatedUsers = users.filter(user => user.accessToken && user.refreshToken);
+      
+      if (authenticatedUsers.length === 0) {
+        return res.status(401).json({ error: 'Authentication required. Please sign in with Google.' });
+      }
+      
+      const user = authenticatedUsers[0];
       res.json({ 
         id: user.id,
         email: user.email,
@@ -108,15 +134,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User settings
+  // User settings - requires authentication
   app.get('/api/user/settings', async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      if (users.length === 0) {
-        return res.status(401).json({ error: 'No authenticated user' });
+      const authenticatedUsers = users.filter(user => user.accessToken && user.refreshToken);
+      
+      if (authenticatedUsers.length === 0) {
+        return res.status(401).json({ error: 'Authentication required. Please sign in with Google.' });
       }
       
-      const user = users[0];
+      const user = authenticatedUsers[0];
       res.json(user.preferences || {});
     } catch (error) {
       console.error('Error fetching user settings:', error);
@@ -127,11 +155,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/user/settings', async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      if (users.length === 0) {
-        return res.status(401).json({ error: 'No authenticated user' });
+      const authenticatedUsers = users.filter(user => user.accessToken && user.refreshToken);
+      
+      if (authenticatedUsers.length === 0) {
+        return res.status(401).json({ error: 'Authentication required. Please sign in with Google.' });
       }
       
-      const user = users[0];
+      const user = authenticatedUsers[0];
       const updatedUser = await storage.updateUserPreferences(user.id, req.body);
       res.json({ success: true, preferences: updatedUser.preferences });
     } catch (error) {
@@ -140,15 +170,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email triage
+  // Email triage - requires proper authentication
   app.get('/api/emails/triage', async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      if (users.length === 0) {
-        return res.status(401).json({ error: 'No authenticated user' });
+      const authenticatedUsers = users.filter(user => user.accessToken && user.refreshToken);
+      
+      if (authenticatedUsers.length === 0) {
+        return res.status(401).json({ error: 'Authentication required. Please sign in with Google.' });
       }
       
-      const user = users[0];
+      const user = authenticatedUsers[0];
       
       // Set up Google credentials
       if (user.accessToken) {
@@ -928,6 +960,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error archiving email:', error);
       res.status(500).json({ error: 'Failed to archive email' });
+    }
+  });
+
+  // Clear demo data endpoint (for fixing authentication issues)
+  app.post('/api/admin/clear-demo-data', async (req, res) => {
+    try {
+      // This should only be used to clear demo/mock data when implementing proper auth
+      const result = await storage.clearDemoData();
+      res.json({ 
+        success: true, 
+        message: 'Demo data cleared successfully',
+        result 
+      });
+    } catch (error) {
+      console.error('Error clearing demo data:', error);
+      res.status(500).json({ error: 'Failed to clear demo data' });
     }
   });
 

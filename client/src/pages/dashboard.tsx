@@ -12,10 +12,12 @@ import { SystemStatus } from "@/components/system-status";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { Bot, Settings, ChevronDown, Mail, Calendar, CheckCircle, Lightbulb, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { SettingsPanel } from "@/components/settings-panel";
 import { EmailApprovalModal } from "@/components/email-approval-modal";
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState({
     emailsTriaged: 0,
@@ -30,17 +32,34 @@ export default function Dashboard() {
   // WebSocket connection for real-time updates
   const { lastMessage, isConnected } = useWebSocket(user?.id);
 
-  // Fetch user profile
-  const { data: userProfile, isLoading: userLoading } = useQuery({
-    queryKey: ["/api/user/profile"],
+  // Check authentication status
+  const { data: authStatus, isLoading: authLoading, error: authError } = useQuery({
+    queryKey: ["/api/auth/status"],
+    retry: false,
     refetchInterval: false,
   });
 
-  // Fetch system stats
+  // Fetch user profile only if authenticated
+  const { data: userProfile, isLoading: userLoading } = useQuery({
+    queryKey: ["/api/user/profile"],
+    enabled: authStatus?.authenticated === true,
+    refetchInterval: false,
+  });
+
+  // Fetch system stats only if authenticated
   const { data: systemStats } = useQuery({
     queryKey: ["/api/stats"],
+    enabled: authStatus?.authenticated === true,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && (authError || !authStatus?.authenticated)) {
+      navigate('/login');
+      return;
+    }
+  }, [authStatus, authLoading, authError, navigate]);
 
   useEffect(() => {
     if (userProfile) {

@@ -69,6 +69,9 @@ export interface IStorage {
   // System logs
   createSystemLog(log: InsertSystemLog): Promise<SystemLog>;
   getSystemLogsByUserId(userId: string): Promise<SystemLog[]>;
+  
+  // Admin functions
+  clearDemoData(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -404,6 +407,55 @@ export class DatabaseStorage implements IStorage {
       .from(systemLogs)
       .where(eq(systemLogs.userId, userId))
       .orderBy(desc(systemLogs.createdAt));
+  }
+
+  // Clear demo data - remove any users without proper Google OAuth tokens
+  async clearDemoData(): Promise<any> {
+    try {
+      // Delete users that don't have both accessToken and refreshToken
+      const deletedUsers = await db
+        .delete(users)
+        .where(
+          or(
+            isNull(users.accessToken),
+            isNull(users.refreshToken),
+            eq(users.accessToken, ''),
+            eq(users.refreshToken, '')
+          )
+        )
+        .returning();
+
+      // Also clear related data for demo users
+      if (deletedUsers.length > 0) {
+        const deletedUserIds = deletedUsers.map(u => u.id);
+        
+        await Promise.all([
+          db.delete(emailTriages).where(
+            or(...deletedUserIds.map(id => eq(emailTriages.userId, id)))
+          ),
+          db.delete(tasks).where(
+            or(...deletedUserIds.map(id => eq(tasks.userId, id)))
+          ),
+          db.delete(meetings).where(
+            or(...deletedUserIds.map(id => eq(meetings.userId, id)))
+          ),
+          db.delete(aiSuggestions).where(
+            or(...deletedUserIds.map(id => eq(aiSuggestions.userId, id)))
+          ),
+          db.delete(systemLogs).where(
+            or(...deletedUserIds.map(id => eq(systemLogs.userId, id)))
+          )
+        ]);
+      }
+
+      return {
+        deletedUsers: deletedUsers.length,
+        message: 'Demo data cleared successfully'
+      };
+    } catch (error) {
+      console.error('Error clearing demo data:', error);
+      throw error;
+    }
   }
 }
 
