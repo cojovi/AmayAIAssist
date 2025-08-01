@@ -8,32 +8,20 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/status');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.authenticated) {
-            // User is authenticated, redirect to dashboard
-            navigate('/dashboard');
-            return;
-          }
-        }
-      } catch (error) {
-        // User not authenticated, stay on login page
-        console.log('User not authenticated');
-      }
-    };
-
-    // Check URL parameters for auth status
+    console.log('Login page mounted');
+    
+    // Check URL parameters for auth status first
     const urlParams = new URLSearchParams(window.location.search);
     const authStatus = urlParams.get('auth');
     const error = urlParams.get('error');
     
     if (authStatus === 'success') {
+      console.log('Auth success, redirecting to dashboard');
       navigate('/dashboard');
-    } else if (authStatus === 'error' || error) {
+      return;
+    } 
+    
+    if (authStatus === 'error' || error) {
       if (error === 'unauthorized_domain') {
         alert('Access denied: Only @cmacroofing.com email addresses are allowed.');
       } else {
@@ -41,9 +29,27 @@ export function LoginPage() {
       }
       // Clear URL parameters after showing error
       window.history.replaceState({}, '', '/login');
+      return;
     }
+
+    // Check if user is already authenticated
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated) {
+            console.log('User already authenticated, redirecting to dashboard');
+            navigate('/dashboard');
+            return;
+          }
+        }
+        console.log('User not authenticated, staying on login page');
+      } catch (error) {
+        console.log('Error checking auth:', error);
+      }
+    };
     
-    // Always check auth status on page load
     checkAuth();
   }, [navigate]);
 

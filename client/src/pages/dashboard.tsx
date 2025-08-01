@@ -29,18 +29,42 @@ export default function Dashboard() {
   const [showEmailApproval, setShowEmailApproval] = useState(false);
   const [showTaskManagement, setShowTaskManagement] = useState(false);
 
-  // WebSocket connection for real-time updates
-  const { lastMessage, isConnected } = useWebSocket(user?.id);
-
-  // Fetch user profile
-  const { data: userProfile, isLoading: userLoading } = useQuery({
-    queryKey: ["/api/user/profile"],
+  // Check authentication status first
+  const { data: authStatus, isLoading: authLoading, error: authError } = useQuery({
+    queryKey: ["/api/auth/status"],
+    retry: false,
     refetchInterval: false,
   });
 
-  // Fetch system stats
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading) {
+      // If we get a 401 error or no authenticated flag, redirect to login
+      if (authError || !authStatus || !(authStatus as any)?.authenticated) {
+        console.log('Redirecting to login - not authenticated');
+        navigate('/login');
+        return;
+      }
+    }
+  }, [authStatus, authLoading, authError, navigate]);
+
+  // WebSocket connection for real-time updates
+  const { lastMessage, isConnected } = useWebSocket(user?.id);
+
+  // Only fetch data if authenticated
+  const isAuthenticated = !authLoading && authStatus && (authStatus as any).authenticated;
+
+  // Fetch user profile only if authenticated
+  const { data: userProfile, isLoading: userLoading } = useQuery({
+    queryKey: ["/api/user/profile"],
+    enabled: isAuthenticated,
+    refetchInterval: false,
+  });
+
+  // Fetch system stats only if authenticated
   const { data: systemStats } = useQuery({
     queryKey: ["/api/stats"],
+    enabled: isAuthenticated,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
@@ -81,11 +105,25 @@ export default function Dashboard() {
     }
   }, [lastMessage]);
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-cyan"></div>
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render anything (redirect will happen)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   // Show loading while fetching user data
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="neon-spinner"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-cyan"></div>
       </div>
     );
   }
