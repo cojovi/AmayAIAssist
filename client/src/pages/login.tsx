@@ -11,10 +11,14 @@ export function LoginPage() {
     // Check if user is already authenticated
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/user/profile');
+        const response = await fetch('/api/auth/status');
         if (response.ok) {
-          // User is authenticated, redirect to dashboard
-          navigate('/dashboard');
+          const data = await response.json();
+          if (data.authenticated) {
+            // User is authenticated, redirect to dashboard
+            navigate('/dashboard');
+            return;
+          }
         }
       } catch (error) {
         // User not authenticated, stay on login page
@@ -25,11 +29,16 @@ export function LoginPage() {
     // Check URL parameters for auth status
     const urlParams = new URLSearchParams(window.location.search);
     const authStatus = urlParams.get('auth');
+    const error = urlParams.get('error');
     
     if (authStatus === 'success') {
       navigate('/dashboard');
-    } else if (authStatus === 'error') {
-      alert('Authentication failed. Please try again.');
+    } else if (authStatus === 'error' || error) {
+      if (error === 'unauthorized_domain') {
+        alert('Access denied: Only @cmacroofing.com email addresses are allowed.');
+      } else {
+        alert('Authentication failed. Please try again.');
+      }
     } else {
       checkAuth();
     }

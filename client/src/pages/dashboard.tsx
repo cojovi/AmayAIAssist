@@ -42,20 +42,21 @@ export default function Dashboard() {
   // Fetch user profile only if authenticated
   const { data: userProfile, isLoading: userLoading } = useQuery({
     queryKey: ["/api/user/profile"],
-    enabled: authStatus?.authenticated === true,
+    enabled: (authStatus as any)?.authenticated === true,
     refetchInterval: false,
   });
 
   // Fetch system stats only if authenticated
   const { data: systemStats } = useQuery({
     queryKey: ["/api/stats"],
-    enabled: authStatus?.authenticated === true,
+    enabled: (authStatus as any)?.authenticated === true,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!authLoading && (authError || !authStatus?.authenticated)) {
+    if (!authLoading && (authError || !(authStatus as any)?.authenticated)) {
+      console.log('Authentication failed, redirecting to login');
       navigate('/login');
       return;
     }
@@ -102,7 +103,8 @@ export default function Dashboard() {
     window.location.href = '/api/auth/google';
   };
 
-  if (userLoading) {
+  // Show loading while checking authentication
+  if (authLoading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="neon-spinner"></div>
@@ -110,34 +112,16 @@ export default function Dashboard() {
     );
   }
 
-  if (!user) {
+  // If not authenticated, show loading while redirect happens
+  if (!(authStatus as any)?.authenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <GlassCard className="p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-neon-cyan/50 shadow-lg shadow-neon-cyan/25 mx-auto mb-4 animate-pulse-neon">
-              <img 
-                src="/amayai-logo.png" 
-                alt="AmayAI Logo" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h1 className="text-2xl font-bold gradient-text mb-4">Welcome to AmayAI</h1>
-            <p className="text-gray-300 mb-6">
-              Your AI personal assistant for Google Workspace. Connect your Google account to get started.
-            </p>
-            <Button 
-              onClick={handleGoogleAuth}
-              className="neon-button neon-button-cyan w-full"
-              data-testid="button-google-auth"
-            >
-              Connect Google Workspace
-            </Button>
-          </div>
-        </GlassCard>
+        <div className="neon-spinner"></div>
       </div>
     );
   }
+
+
 
   return (
     <>
