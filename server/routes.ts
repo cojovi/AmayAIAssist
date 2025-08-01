@@ -756,7 +756,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         urgencyThreshold: 3,
         autoReply: false,
         spamFilterLevel: "medium",
-        allowedDomains: ["cmac.org", "gmail.com"]
+        allowedDomains: ["cmac.org", "gmail.com"],
+        autoReplyEmails: [],
+        continuousTaskSync: true
       },
       aiPreferences: {
         responseStyle: "professional",
@@ -829,6 +831,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error exporting data:', error);
       res.status(500).json({ error: 'Failed to export data' });
+    }
+  });
+
+  // Continuous task sync endpoint
+  app.get('/api/tasks/draft-suggestions', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      const recentEmails = await storage.getRecentEmailTriages(user.id, 10);
+      
+      // Generate draft tasks that need user approval
+      const draftTasks = await Promise.all(
+        recentEmails.slice(0, 3).map(async (email) => ({
+          id: `draft-${Date.now()}-${Math.random()}`,
+          title: `Follow up: ${email.subject}`,
+          description: `AI suggested task based on email from ${email.sender}`,
+          priority: 'normal',
+          aiGenerated: true,
+          requiresApproval: true,
+          sourceEmail: email.id,
+          createdAt: new Date().toISOString()
+        }))
+      );
+      
+      res.json({ 
+        success: true, 
+        draftTasks,
+        message: 'AI draft tasks generated and ready for approval'
+      });
+    } catch (error) {
+      console.error('Error generating draft tasks:', error);
+      res.status(500).json({ error: 'Failed to generate draft tasks' });
+    }
+  });
+
+  // Approve/reject draft task
+  app.post('/api/tasks/approve-draft', async (req, res) => {
+    try {
+      const { draftId, approved, title, description } = req.body;
+      
+      if (approved) {
+        const users = await storage.getAllUsers();
+        if (users.length === 0) {
+          return res.status(401).json({ error: 'No authenticated user' });
+        }
+        
+        const user = users[0];
+        
+        if (user.accessToken) {
+          await googleService.setCredentials({
+            access_token: user.accessToken,
+            refresh_token: user.refreshToken
+          });
+          
+          const googleTask = await googleService.createTask(title, description);
+          
+          const task = await storage.createTask({
+            userId: user.id,
+            title,
+            description,
+            priority: 'normal',
+            googleTaskId: googleTask.data?.id || '',
+            aiGenerated: true
+          });
+
+          res.json({ success: true, task, message: 'Draft task approved and created' });
+        } else {
+          return res.status(401).json({ error: 'User not authenticated with Google' });
+        }
+      } else {
+        res.json({ success: true, message: 'Draft task dismissed' });
+      }
+    } catch (error) {
+      console.error('Error approving draft task:', error);
+      res.status(500).json({ error: 'Failed to approve draft task' });
     }
   });
 

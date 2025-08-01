@@ -38,6 +38,8 @@ interface SettingsData {
     autoReply: boolean;
     spamFilterLevel: string;
     allowedDomains: string[];
+    autoReplyEmails: string[];
+    continuousTaskSync: boolean;
   };
   aiPreferences: {
     responseStyle: string;
@@ -88,7 +90,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
       urgencyThreshold: 3,
       autoReply: false,
       spamFilterLevel: "medium",
-      allowedDomains: ["cmac.org", "gmail.com"]
+      allowedDomains: ["cmac.org", "gmail.com"],
+      autoReplyEmails: [],
+      continuousTaskSync: true
     },
     aiPreferences: {
       responseStyle: "professional",
@@ -232,6 +236,28 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     }));
   };
 
+  const addAutoReplyEmail = (email: string) => {
+    if (email && !settings.emailFilters.autoReplyEmails.includes(email)) {
+      setSettings(prev => ({
+        ...prev,
+        emailFilters: {
+          ...prev.emailFilters,
+          autoReplyEmails: [...prev.emailFilters.autoReplyEmails, email]
+        }
+      }));
+    }
+  };
+
+  const removeAutoReplyEmail = (email: string) => {
+    setSettings(prev => ({
+      ...prev,
+      emailFilters: {
+        ...prev.emailFilters,
+        autoReplyEmails: prev.emailFilters.autoReplyEmails.filter(e => e !== email)
+      }
+    }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden glass-card border-neon-cyan/30">
@@ -330,6 +356,10 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
                 <div className="space-y-2">
                   <Label>Allowed Domains</Label>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Domains that bypass strict filtering. Emails from these domains are automatically trusted and will receive faster processing. 
+                    This helps ensure important communications from your organization and key partners are never missed.
+                  </p>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {settings.emailFilters.allowedDomains.map((domain) => (
                       <Badge key={domain} variant="secondary" className="flex items-center gap-1">
@@ -368,6 +398,81 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     </Button>
                   </div>
                 </div>
+
+                {settings.emailFilters.autoReply && (
+                  <div className="space-y-2">
+                    <Label>Auto-Reply Email Addresses</Label>
+                    <p className="text-xs text-gray-400 mb-2">
+                      Specific email addresses that will receive AI-generated auto-replies. The AI will analyze 
+                      previous email history with these contacts to match their communication style and tone.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {settings.emailFilters.autoReplyEmails.map((email) => (
+                        <Badge key={email} variant="secondary" className="flex items-center gap-1">
+                          {email}
+                          <button
+                            onClick={() => removeAutoReplyEmail(email)}
+                            className="ml-1 hover:text-red-400"
+                            data-testid={`button-remove-email-${email.replace('@', '-at-')}`}
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter email address (e.g., boss@company.com)"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            addAutoReplyEmail((e.target as HTMLInputElement).value);
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }}
+                        data-testid="input-add-auto-reply-email"
+                      />
+                      <Button
+                        onClick={(e) => {
+                          const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                          addAutoReplyEmail(input.value);
+                          input.value = '';
+                        }}
+                        variant="outline"
+                        data-testid="button-add-auto-reply-email"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
+                      <p className="text-sm text-blue-400">
+                        🧠 AI Learning: When enabled, AmayAI analyzes email history with these contacts to adapt 
+                        response tone, formality level, and communication patterns for personalized auto-replies.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Continuous Google Tasks Sync</Label>
+                    <p className="text-xs text-gray-400">Automatically sync and generate AI draft tasks from email/calendar activity</p>
+                  </div>
+                  <Switch
+                    checked={settings.emailFilters.continuousTaskSync}
+                    onCheckedChange={(checked) => updateSetting('emailFilters', 'continuousTaskSync', checked)}
+                    data-testid="switch-continuous-task-sync"
+                  />
+                </div>
+
+                {settings.emailFilters.continuousTaskSync && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+                    <p className="text-sm text-purple-400">
+                      🔄 Continuous Sync Active: AmayAI continuously monitors your emails and calendar events to automatically 
+                      generate draft tasks in Google Tasks. These AI-suggested tasks appear as drafts that you can approve or dismiss. 
+                      The system learns from your approval patterns to improve future suggestions.
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -440,6 +545,18 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     data-testid="switch-learning-mode"
                   />
                 </div>
+                
+                {settings.aiPreferences.learningEnabled && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                    <p className="text-sm text-green-400">
+                      📚 Learning Mode Active: AmayAI is analyzing your email patterns, response times, communication style, 
+                      and task preferences to provide increasingly personalized assistance. 
+                      <a href="/AI_LEARNING_MODE.md" target="_blank" className="underline ml-1">
+                        View detailed learning documentation
+                      </a>
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -535,7 +652,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Email Notifications</Label>
-                    <p className="text-xs text-gray-400">Receive notifications for important emails</p>
+                    <p className="text-xs text-gray-400">Browser notifications and WebSocket alerts in dashboard</p>
                   </div>
                   <Switch
                     checked={settings.notifications.emailNotifications}
@@ -543,6 +660,16 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     data-testid="switch-email-notifications"
                   />
                 </div>
+                
+                {settings.notifications.emailNotifications && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                    <p className="text-sm text-yellow-400">
+                      📨 Notification Delivery: Email notifications appear as browser push notifications (if enabled), 
+                      real-time updates in the dashboard via WebSocket connections, and status changes in the system status panel. 
+                      For external notifications like test emails, ensure your browser allows notifications from this domain.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div>
