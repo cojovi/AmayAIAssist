@@ -81,7 +81,7 @@ export function EmailTriage() {
   };
 
   return (
-    <GlassCard className="p-6 border border-neon-green/30 h-full">
+    <GlassCard className="p-6 border border-neon-green/30 flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold flex items-center">
           <Inbox className="mr-3 text-neon-green animate-glow" />
@@ -93,7 +93,7 @@ export function EmailTriage() {
         </div>
       </div>
 
-      <div className="space-y-4 max-h-96 overflow-y-auto">
+      <div className="space-y-4 flex-1 overflow-y-auto min-h-0 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="neon-spinner"></div>
