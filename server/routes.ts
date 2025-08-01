@@ -55,7 +55,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await googleService.setCredentials(tokens);
 
       // Get user info
-      const oauth2 = require('googleapis').google.oauth2({ version: 'v2', auth: googleService['oauth2Client'] });
+      const { google } = await import('googleapis');
+      const oauth2 = google.oauth2({ version: 'v2', auth: googleService['oauth2Client'] });
       const userInfo = await oauth2.userinfo.get();
 
       // Create or update user
@@ -63,7 +64,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user;
       
       if (existingUser) {
-        user = await storage.updateUserTokens(existingUser.id, tokens);
+        user = await storage.updateUserTokens(existingUser.id, {
+          access_token: tokens.access_token || undefined,
+          refresh_token: tokens.refresh_token || undefined
+        });
       } else {
         user = await storage.createUser({
           email: userInfo.data.email!,
@@ -75,10 +79,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Redirect to dashboard with success
-      res.redirect('/dashboard?auth=success');
+      res.redirect('/?auth=success');
     } catch (error) {
       console.error('OAuth callback error:', error);
-      res.redirect('/dashboard?auth=error');
+      res.redirect('/?auth=error');
     }
   });
 
