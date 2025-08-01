@@ -443,19 +443,15 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                         Add
                       </Button>
                     </div>
-                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
-                      <p className="text-sm text-blue-400">
-                        🧠 AI Learning: When enabled, AmayAI analyzes email history with these contacts to adapt 
-                        response tone, formality level, and communication patterns for personalized auto-replies.
-                      </p>
-                    </div>
                   </div>
                 )}
+
+                <Separator />
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Continuous Google Tasks Sync</Label>
-                    <p className="text-xs text-gray-400">Automatically sync and generate AI draft tasks from email/calendar activity</p>
+                    <p className="text-xs text-gray-400">Automatically generate and sync draft tasks based on email content</p>
                   </div>
                   <Switch
                     checked={settings.emailFilters.continuousTaskSync}
@@ -463,16 +459,6 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     data-testid="switch-continuous-task-sync"
                   />
                 </div>
-
-                {settings.emailFilters.continuousTaskSync && (
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                    <p className="text-sm text-purple-400">
-                      🔄 Continuous Sync Active: AmayAI continuously monitors your emails and calendar events to automatically 
-                      generate draft tasks in Google Tasks. These AI-suggested tasks appear as drafts that you can approve or dismiss. 
-                      The system learns from your approval patterns to improve future suggestions.
-                    </p>
-                  </div>
-                )}
               </div>
             </TabsContent>
 
@@ -891,7 +877,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 variant="outline"
                 onClick={() => {
                   setSettings({
-                    emailFilters: { enableCMACCatchall: true, urgencyThreshold: 3, autoReply: false, spamFilterLevel: "medium", allowedDomains: ["cmac.org", "gmail.com"] },
+                    emailFilters: { enableCMACCatchall: true, urgencyThreshold: 3, autoReply: false, spamFilterLevel: "medium", allowedDomains: ["cmac.org", "gmail.com"], autoReplyEmails: [], continuousTaskSync: true },
                     aiPreferences: { responseStyle: "professional", creativityLevel: 7, autoSuggestions: true, proactiveMode: true, learningEnabled: true },
                     notifications: { emailNotifications: true, slackNotifications: true, desktopNotifications: true, quietHours: { start: "22:00", end: "08:00" }, urgentOnly: false },
                     calendar: { autoScheduling: true, bufferTime: 15, workingHours: { start: "09:00", end: "17:00" }, timeZone: "America/New_York", conflictResolution: "suggest_alternatives" },

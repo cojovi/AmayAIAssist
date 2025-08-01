@@ -59,6 +59,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const oauth2 = google.oauth2({ version: 'v2', auth: googleService['oauth2Client'] });
       const userInfo = await oauth2.userinfo.get();
 
+      // Check if user email is from allowed domain - restrict to @cmacroofing.com only
+      if (!userInfo.data.email?.endsWith('@cmacroofing.com')) {
+        return res.redirect('/login?error=unauthorized_domain');
+      }
+
       // Create or update user
       const existingUser = await storage.getUserByEmail(userInfo.data.email!);
       let user;
@@ -86,11 +91,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check authentication status
+  // Check authentication status - only allow @cmacroofing.com emails
   app.get('/api/auth/status', async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      const authenticatedUsers = users.filter(user => user.accessToken && user.refreshToken);
+      const authenticatedUsers = users.filter(user => 
+        user.accessToken && 
+        user.refreshToken && 
+        user.email && 
+        user.email.endsWith('@cmacroofing.com')
+      );
       
       if (authenticatedUsers.length === 0) {
         return res.status(401).json({ authenticated: false });
@@ -192,17 +202,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'User not authenticated with Google' });
       }
 
-      // Get unread emails
-      const emails = await googleService.getEmails(user.id);
+      // Get unread emails (already filtered at Gmail API level)
+      const filteredEmails = await googleService.getEmails(user.id);
       
-      // Filter out CMAC_CATCHALL emails
-      const filteredEmails = emails.filter(email => 
-        !email.subject.startsWith('[CMAC_CATCHALL]')
+      // Double-check filter for CMAC_CATCHALL emails - completely exclude them
+      const emails = filteredEmails.filter(email => 
+        !email.subject.includes('[CMAC_CATCHALL]')
       );
       
       // Process new emails that haven't been triaged
       const newEmails = [];
-      for (const email of filteredEmails) {
+      for (const email of emails) {
         const existingTriage = await storage.getEmailTriageByMessageId(email.id);
         if (!existingTriage) {
           // Classify email with AI

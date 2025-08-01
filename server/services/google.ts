@@ -50,7 +50,7 @@ export class GoogleService {
     const response = await gmail.users.messages.list({
       userId: 'me',
       maxResults,
-      q: 'is:unread'
+      q: 'is:unread -subject:"[CMAC_CATCHALL]"'
     });
 
     if (!response.data.messages) return [];
