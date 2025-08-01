@@ -12,7 +12,7 @@ import { SystemStatus } from "@/components/system-status";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { Bot, Settings, ChevronDown, Mail, Calendar, CheckCircle, Lightbulb, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
-import { SettingsModal } from "@/components/settings-modal";
+import { SettingsPanel } from "@/components/settings-panel";
 import { EmailApprovalModal } from "@/components/email-approval-modal";
 
 export default function Dashboard() {
@@ -277,23 +277,8 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Simple Modal Overlays */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="glass-card max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold gradient-text">Settings</h2>
-              <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white">✕</button>
-            </div>
-            <div className="space-y-4">
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                <p className="text-yellow-400">🔧 Settings panel coming soon!</p>
-                <p className="text-sm text-gray-400 mt-2">Advanced settings including email filters, AI preferences, and notification options will be available here.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Settings Panel */}
+      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
 
       {showEmailApproval && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">

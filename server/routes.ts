@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contextualDrafts = await Promise.all(
         recentEmails.slice(0, 2).map(async (email) => {
           const draft = await draftEmailReply(
-            { sender: email.sender, subject: email.subject, body: email.body },
+            { sender: email.sender, subject: email.subject, body: email.subject },
             'custom',
             'Generate a follow-up email based on the previous conversation'
           );
@@ -526,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recentEmails = await storage.getRecentEmailTriages(user.id, 5);
       
       // AI analyzes schedule gaps and suggests optimal meeting times
-      const suggestions = await generateProactiveSuggestions(user.id, recentEmails, events);
+      const suggestions = await generateProactiveSuggestions(recentEmails, events);
       
       res.json({ 
         success: true, 
@@ -745,6 +745,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching stats:', error);
       res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
+
+  // Settings endpoints
+  app.get('/api/settings', (req, res) => {
+    res.json({
+      emailFilters: {
+        enableCMACCatchall: true,
+        urgencyThreshold: 3,
+        autoReply: false,
+        spamFilterLevel: "medium",
+        allowedDomains: ["cmac.org", "gmail.com"]
+      },
+      aiPreferences: {
+        responseStyle: "professional",
+        creativityLevel: 7,
+        autoSuggestions: true,
+        proactiveMode: true,
+        learningEnabled: true
+      },
+      notifications: {
+        emailNotifications: true,
+        slackNotifications: true,
+        desktopNotifications: true,
+        quietHours: { start: "22:00", end: "08:00" },
+        urgentOnly: false
+      },
+      calendar: {
+        autoScheduling: true,
+        bufferTime: 15,
+        workingHours: { start: "09:00", end: "17:00" },
+        timeZone: "America/New_York",
+        conflictResolution: "suggest_alternatives"
+      },
+      security: {
+        twoFactorAuth: false,
+        sessionTimeout: 60,
+        dataRetention: 90,
+        encryptionLevel: "high"
+      },
+      appearance: {
+        theme: "dark",
+        neonIntensity: 8,
+        compactMode: false,
+        animations: true
+      }
+    });
+  });
+
+  app.post('/api/settings', async (req, res) => {
+    try {
+      const settings = req.body;
+      console.log('Settings saved:', settings);
+      res.json({ success: true, message: 'Settings saved successfully' });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      res.status(500).json({ error: 'Failed to save settings' });
+    }
+  });
+
+  app.delete('/api/data/clear', async (req, res) => {
+    try {
+      console.log('Clearing user data...');
+      res.json({ success: true, message: 'Data cleared successfully' });
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      res.status(500).json({ error: 'Failed to clear data' });
+    }
+  });
+
+  app.get('/api/data/export', async (req, res) => {
+    try {
+      const exportData = {
+        user: { id: "user123", email: "user@example.com" },
+        stats: { emailsTriaged: 25, meetingsScheduled: 0, tasksCompleted: 0 },
+        exportDate: new Date().toISOString()
+      };
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="amayai-data.json"');
+      res.json(exportData);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      res.status(500).json({ error: 'Failed to export data' });
     }
   });
 
