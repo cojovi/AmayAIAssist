@@ -30,6 +30,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User>;
   updateUserTokens(id: string, tokens: { access_token?: string; refresh_token?: string }): Promise<User>;
+  updateUserPreferences(id: string, preferences: any): Promise<User>;
   getAllUsers(): Promise<User[]>;
 
   // Email triage management
@@ -121,6 +122,18 @@ export class DatabaseStorage implements IStorage {
       .set({
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token || undefined,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserPreferences(id: string, preferences: any): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        preferences,
         updatedAt: new Date()
       })
       .where(eq(users.id, id))

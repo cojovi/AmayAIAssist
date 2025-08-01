@@ -1,52 +1,83 @@
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Bell, MessageSquare, Calendar, Mail } from "lucide-react";
+import { Calendar, Clock, Mail, Plus, Zap, Sparkles, Brain, Target } from "lucide-react";
 
 export function QuickActions() {
-  const handleAction = (action: string) => {
-    console.log(`Quick action: ${action}`);
-    // TODO: Implement actual quick actions
+  const handleAIAction = async (action: string) => {
+    try {
+      const response = await fetch(`/api/${action}`, { method: 'POST' });
+      if (response.ok) {
+        const result = await response.json();
+        alert(`AI ${action} completed successfully!`);
+      }
+    } catch (error) {
+      console.error(`AI ${action} failed:`, error);
+    }
   };
 
   return (
-    <GlassCard className="p-6 border border-neon-blue/30">
-      <h3 className="text-lg font-semibold mb-4 flex items-center">
-        <Bell className="mr-3 text-neon-blue animate-glow" />
-        Quick Actions
-      </h3>
-      <div className="space-y-3">
-        <Button
-          className="neon-button neon-button-cyan w-full justify-start"
-          onClick={() => handleAction('add_reminder')}
-          data-testid="button-add-reminder"
+    <GlassCard className="p-4 border border-neon-yellow/30">
+      <div className="flex items-center gap-2 mb-4">
+        <Zap className="w-4 h-4 text-neon-yellow" />
+        <h3 className="font-semibold text-neon-yellow">AI Quick Actions</h3>
+        <div className="w-1.5 h-1.5 bg-neon-yellow rounded-full animate-pulse ml-auto"></div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-2">
+        <button 
+          className="neon-button neon-button-yellow text-xs p-2 h-auto"
+          data-testid="button-ai-compose-email"
+          onClick={() => handleAIAction('emails/ai-compose')}
         >
-          <Bell className="mr-2 w-4 h-4" />
-          Add Quick Reminder
-        </Button>
-        <Button
-          className="neon-button neon-button-green w-full justify-start"
-          onClick={() => handleAction('schedule_slack')}
-          data-testid="button-schedule-slack"
+          <Mail className="w-3 h-3 mb-1" />
+          <span>AI Email</span>
+        </button>
+        
+        <button 
+          className="neon-button neon-button-yellow text-xs p-2 h-auto"
+          data-testid="button-ai-schedule-meeting"
+          onClick={() => handleAIAction('calendar/ai-schedule')}
         >
-          <MessageSquare className="mr-2 w-4 h-4" />
-          Schedule Slack Message
-        </Button>
-        <Button
-          className="neon-button neon-button-magenta w-full justify-start"
-          onClick={() => handleAction('find_meeting_time')}
-          data-testid="button-find-meeting-time"
+          <Calendar className="w-3 h-3 mb-1" />
+          <span>AI Schedule</span>
+        </button>
+        
+        <button 
+          className="neon-button neon-button-yellow text-xs p-2 h-auto"
+          data-testid="button-ai-create-task"
+          onClick={() => handleAIAction('tasks/ai-create')}
         >
-          <Calendar className="mr-2 w-4 h-4" />
-          Find Meeting Time
-        </Button>
-        <Button
-          className="neon-button neon-button-blue w-full justify-start"
-          onClick={() => handleAction('draft_email')}
-          data-testid="button-draft-email"
+          <Sparkles className="w-3 h-3 mb-1" />
+          <span>AI Tasks</span>
+        </button>
+        
+        <button 
+          className="neon-button neon-button-yellow text-xs p-2 h-auto"
+          data-testid="button-ai-optimize"
+          onClick={() => handleAIAction('suggestions')}
         >
-          <Mail className="mr-2 w-4 h-4" />
-          Draft Email Template
-        </Button>
+          <Brain className="w-3 h-3 mb-1" />
+          <span>AI Optimize</span>
+        </button>
+      </div>
+      
+      {/* AI Productivity Booster Section */}
+      <div className="mt-4 pt-4 border-t border-neon-yellow/20">
+        <div className="flex items-center gap-2 mb-2">
+          <Target className="w-3 h-3 text-neon-cyan" />
+          <span className="text-xs text-neon-cyan font-medium">Productivity Boost</span>
+        </div>
+        <div className="space-y-2 text-xs">
+          <div className="bg-green-500/10 border border-green-500/30 rounded px-2 py-1">
+            <span className="text-green-400">✓ Email Filtering Active</span>
+          </div>
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded px-2 py-1">
+            <span className="text-blue-400">🧠 AI Analysis Running</span>
+          </div>
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded px-2 py-1">
+            <span className="text-purple-400">📅 Smart Scheduling On</span>
+          </div>
+        </div>
       </div>
     </GlassCard>
   );

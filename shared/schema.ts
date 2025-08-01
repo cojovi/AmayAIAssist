@@ -10,7 +10,23 @@ export const users = pgTable("users", {
   googleId: text("google_id").notNull().unique(),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
-  preferences: jsonb("preferences").default({}),
+  preferences: jsonb("preferences").default({
+    "emailFilters": {
+      "skipCatchAll": true,
+      "skipPrefixes": ["[CMAC_CATCHALL]"],
+      "autoClassify": true
+    },
+    "aiSettings": {
+      "autoTaskCreation": true,
+      "proactiveSuggestions": true,
+      "meetingPrep": true,
+      "smartReplies": true
+    },
+    "notifications": {
+      "slack": true,
+      "urgentOnly": false
+    }
+  }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

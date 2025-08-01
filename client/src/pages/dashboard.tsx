@@ -10,8 +10,10 @@ import { AiSuggestions } from "@/components/ai-suggestions";
 import { QuickActions } from "@/components/quick-actions";
 import { SystemStatus } from "@/components/system-status";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { Bot, Settings, ChevronDown, Mail, Calendar, CheckCircle, Lightbulb } from "lucide-react";
+import { Bot, Settings, ChevronDown, Mail, Calendar, CheckCircle, Lightbulb, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
+import { SettingsModal } from "@/components/settings-modal";
+import { EmailApprovalModal } from "@/components/email-approval-modal";
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -21,6 +23,9 @@ export default function Dashboard() {
     tasksCompleted: 0,
     aiSuggestions: 0
   });
+  const [showSettings, setShowSettings] = useState(false);
+  const [showEmailApproval, setShowEmailApproval] = useState(false);
+  const [showTaskManagement, setShowTaskManagement] = useState(false);
 
   // WebSocket connection for real-time updates
   const { lastMessage, isConnected } = useWebSocket(user?.id);
@@ -135,6 +140,7 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <Button 
                 className="neon-button neon-button-blue"
+                onClick={() => setShowSettings(true)}
                 data-testid="button-settings"
               >
                 <Settings className="w-4 h-4 mr-2 text-neon-blue" />
@@ -170,7 +176,10 @@ export default function Dashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <GlassCard className="p-6 border border-neon-green/30 hover:border-neon-green hover:shadow-lg hover:shadow-neon-green/20 transition-all duration-300 group">
+          <GlassCard 
+            className="p-6 border border-neon-green/30 hover:border-neon-green hover:shadow-lg hover:shadow-neon-green/20 transition-all duration-300 group cursor-pointer"
+            onClick={() => setShowEmailApproval(true)}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm mb-1">Emails Triaged</p>
@@ -182,7 +191,7 @@ export default function Dashboard() {
               <div className="neon-progress">
                 <div className="neon-progress-bar w-3/4"></div>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Processing active</p>
+              <p className="text-xs text-gray-400 mt-1">Processing active • Click to review</p>
             </div>
           </GlassCard>
 
@@ -202,7 +211,10 @@ export default function Dashboard() {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-6 border border-neon-magenta/30 hover:border-neon-magenta hover:shadow-lg hover:shadow-neon-magenta/20 transition-all duration-300 group">
+          <GlassCard 
+            className="p-6 border border-neon-magenta/30 hover:border-neon-magenta hover:shadow-lg hover:shadow-neon-magenta/20 transition-all duration-300 group cursor-pointer"
+            onClick={() => setShowTaskManagement(true)}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm mb-1">Tasks Completed</p>
@@ -214,7 +226,7 @@ export default function Dashboard() {
               <div className="neon-progress">
                 <div className="neon-progress-bar w-4/5" style={{ background: 'linear-gradient(90deg, var(--neon-magenta), var(--neon-pink))' }}></div>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Weekly goal progress</p>
+              <p className="text-xs text-gray-400 mt-1">Google Tasks • Click to manage</p>
             </div>
           </GlassCard>
 
@@ -256,6 +268,85 @@ export default function Dashboard() {
           <TaskManagement />
         </div>
       </main>
+
+      {/* Simple Modal Overlays */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="glass-card max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold gradient-text">Settings</h2>
+              <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <p className="text-yellow-400">🔧 Settings panel coming soon!</p>
+                <p className="text-sm text-gray-400 mt-2">Advanced settings including email filters, AI preferences, and notification options will be available here.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEmailApproval && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="glass-card max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold gradient-text">Email Triage & Approval</h2>
+              <button onClick={() => setShowEmailApproval(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <p className="text-gray-300 mb-4">
+              You have triaged {stats.emailsTriaged} emails. The AI has processed and classified your emails, filtering out [CMAC_CATCHALL] messages as requested.
+            </p>
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+              <p className="text-green-400">✓ Email filtering active</p>
+              <p className="text-sm text-gray-400 mt-1">
+                Emails with "[CMAC_CATCHALL]" prefix are automatically filtered from triage. 
+                Full approval interface coming soon with detailed email review and response management.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTaskManagement && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="glass-card max-w-3xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold gradient-text">AI Task Management</h2>
+              <button onClick={() => setShowTaskManagement(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-gray-300">Sync with Google Tasks and get AI-powered task suggestions</p>
+                <button 
+                  className="neon-button neon-button-magenta"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/tasks/ai-create', { method: 'POST' });
+                      const result = await response.json();
+                      if (result.success) {
+                        alert(`Created ${result.tasksCreated} AI-suggested tasks!`);
+                        window.location.reload(); // Simple refresh to update stats
+                      }
+                    } catch (error) {
+                      alert('Error creating AI tasks. Please try again.');
+                    }
+                  }}
+                >
+                  ✨ Generate AI Tasks
+                </button>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-400">🚀 AI Task Generation</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Click "Generate AI Tasks" to analyze your recent emails and calendar events, 
+                  then automatically create actionable tasks in Google Tasks based on your activity patterns.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

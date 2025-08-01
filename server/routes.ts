@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { googleService } from "./services/google";
-import { classifyEmail, generateProactiveSuggestions, draftEmailReply } from "./services/openai";
+import { classifyEmail, generateProactiveSuggestions, draftEmailReply, generateTaskSuggestions } from "./services/openai";
 import { sendTaskReminderDM, sendMeetingNotification } from "./services/slack";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -108,6 +108,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User settings
+  app.get('/api/user/settings', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      res.json(user.preferences || {});
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      res.status(500).json({ error: 'Failed to fetch user settings' });
+    }
+  });
+
+  app.put('/api/user/settings', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      const updatedUser = await storage.updateUserPreferences(user.id, req.body);
+      res.json({ success: true, preferences: updatedUser.preferences });
+    } catch (error) {
+      console.error('Error updating user settings:', error);
+      res.status(500).json({ error: 'Failed to update user settings' });
+    }
+  });
+
   // Email triage
   app.get('/api/emails/triage', async (req, res) => {
     try {
@@ -131,9 +163,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get unread emails
       const emails = await googleService.getEmails(user.id);
       
+      // Filter out CMAC_CATCHALL emails
+      const filteredEmails = emails.filter(email => 
+        !email.subject.startsWith('[CMAC_CATCHALL]')
+      );
+      
       // Process new emails that haven't been triaged
       const newEmails = [];
-      for (const email of emails) {
+      for (const email of filteredEmails) {
         const existingTriage = await storage.getEmailTriageByMessageId(email.id);
         if (!existingTriage) {
           // Classify email with AI
@@ -335,11 +372,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = users[0];
-      const tasks = await storage.getTasksByUserId(user.id);
-      res.json(tasks);
+      
+      // Set up Google credentials
+      if (user.accessToken) {
+        await googleService.setCredentials({
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken
+        });
+      } else {
+        return res.status(401).json({ error: 'User not authenticated with Google' });
+      }
+
+      // Get tasks from Google Tasks API
+      const googleTasks = await googleService.getTasks();
+      
+      // Sync with local database
+      const localTasks = await storage.getTasksByUserId(user.id);
+      
+      // Update local database with Google Tasks
+      for (const googleTask of googleTasks) {
+        const existingTask = localTasks.find(t => t.googleTaskId === googleTask.id);
+        if (!existingTask && googleTask.title) {
+          await storage.createTask({
+            userId: user.id,
+            title: googleTask.title,
+            description: googleTask.notes || '',
+            completed: googleTask.status === 'completed',
+            dueDate: googleTask.due ? new Date(googleTask.due) : null,
+            googleTaskId: googleTask.id || '',
+            priority: 'normal'
+          });
+        }
+      }
+      
+      // Return updated tasks
+      const updatedTasks = await storage.getTasksByUserId(user.id);
+      res.json(updatedTasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+  });
+
+  // Create AI-powered task
+  app.post('/api/tasks/ai-create', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      
+      if (user.accessToken) {
+        await googleService.setCredentials({
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken
+        });
+      }
+
+      // Get recent emails and calendar events for context
+      const recentEmails = await storage.getRecentEmailTriages(user.id, 5);
+      const calendarEvents = await googleService.getCalendarEvents();
+      
+      // Use AI to generate task suggestions based on email and calendar context
+      const aiSuggestions = await generateTaskSuggestions(recentEmails, calendarEvents);
+      
+      // Create the suggested tasks
+      const createdTasks = [];
+      for (const suggestion of aiSuggestions) {
+        const googleTask = await googleService.createTask(
+          suggestion.title,
+          suggestion.description,
+          suggestion.dueDate
+        );
+        
+        const localTask = await storage.createTask({
+          userId: user.id,
+          title: suggestion.title,
+          description: suggestion.description,
+          dueDate: suggestion.dueDate ? new Date(suggestion.dueDate) : null,
+          priority: suggestion.priority || 'normal',
+          googleTaskId: googleTask.data?.id || ''
+        });
+        
+        createdTasks.push(localTask);
+      }
+      
+      res.json({ 
+        success: true, 
+        tasksCreated: createdTasks.length,
+        tasks: createdTasks 
+      });
+    } catch (error) {
+      console.error('Error creating AI tasks:', error);
+      res.status(500).json({ error: 'Failed to create AI tasks' });
+    }
+  });
+
+  // AI Email Composition
+  app.post('/api/emails/ai-compose', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      const recentEmails = await storage.getRecentEmailTriages(user.id, 3);
+      
+      // Generate context-aware email drafts
+      const contextualDrafts = await Promise.all(
+        recentEmails.slice(0, 2).map(async (email) => {
+          const draft = await draftEmailReply(
+            { sender: email.sender, subject: email.subject, body: email.body },
+            'custom',
+            'Generate a follow-up email based on the previous conversation'
+          );
+          return { subject: `Follow-up: ${email.subject}`, draft, priority: 'high' };
+        })
+      );
+      
+      res.json({ 
+        success: true, 
+        drafts: contextualDrafts,
+        message: 'AI email drafts generated successfully'
+      });
+    } catch (error) {
+      console.error('Error generating AI emails:', error);
+      res.status(500).json({ error: 'Failed to generate AI emails' });
+    }
+  });
+
+  // AI Calendar Scheduling
+  app.post('/api/calendar/ai-schedule', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      
+      if (user.accessToken) {
+        await googleService.setCredentials({
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken
+        });
+      }
+
+      // Get upcoming events and find gaps for productive work
+      const events = await googleService.getCalendarEvents();
+      const recentEmails = await storage.getRecentEmailTriages(user.id, 5);
+      
+      // AI analyzes schedule gaps and suggests optimal meeting times
+      const suggestions = await generateProactiveSuggestions(user.id, recentEmails, events);
+      
+      res.json({ 
+        success: true, 
+        suggestions: suggestions.filter(s => s.type === 'schedule'),
+        message: 'AI scheduling optimization completed'
+      });
+    } catch (error) {
+      console.error('Error with AI scheduling:', error);
+      res.status(500).json({ error: 'Failed to optimize schedule' });
     }
   });
 

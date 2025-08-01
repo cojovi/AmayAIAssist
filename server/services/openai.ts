@@ -193,3 +193,65 @@ Draft a ${replyType} reply${customInstructions ? ` with these instructions: ${cu
     throw new Error("Failed to draft email reply: " + (error as Error).message);
   }
 }
+
+// Generate AI-powered task suggestions based on emails and calendar
+export async function generateTaskSuggestions(emails: any[], calendarEvents: any[]) {
+  try {
+    const emailContext = emails.map(email => 
+      `Email from ${email.sender} about "${email.subject}": ${email.aiSummary}`
+    ).join('\n');
+    
+    const calendarContext = calendarEvents.slice(0, 5).map(event => 
+      `Meeting: ${event.summary} at ${event.start?.dateTime || event.start?.date}`
+    ).join('\n');
+
+    const prompt = `Based on the following email and calendar context, suggest 2-4 actionable tasks that would help improve productivity and follow up on important items.
+
+EMAIL CONTEXT:
+${emailContext}
+
+CALENDAR CONTEXT:  
+${calendarContext}
+
+Generate specific, actionable tasks with:
+- Clear titles (max 60 chars)
+- Brief descriptions explaining why the task is needed
+- Priority level (low, normal, high, urgent)
+- Suggested due date (if applicable, in ISO format)
+
+Respond with JSON in this format:
+{
+  "tasks": [
+    {
+      "title": "Follow up on meeting request",
+      "description": "Send confirmation and agenda for upcoming meeting",
+      "priority": "high",
+      "dueDate": "2024-01-15T09:00:00Z"
+    }
+  ]
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI assistant that helps create productive tasks based on email and calendar patterns. Focus on actionable follow-ups and important deadlines."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 800
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || '{"tasks": []}');
+    return result.tasks || [];
+  } catch (error) {
+    console.error('Error generating task suggestions:', error);
+    return [];
+  }
+}
