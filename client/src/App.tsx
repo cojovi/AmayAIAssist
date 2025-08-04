@@ -9,13 +9,24 @@ import { LoginPage } from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  console.log('Router rendering, current URL:', window.location.pathname);
   return (
     <Switch>
-      <Route path="/login" component={LoginPage} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/email-triage" component={EmailTriagePage} />
-      <Route path="/" component={Dashboard} />
-      <Route component={NotFound} />
+      <Route path="/login">
+        <LoginPage />
+      </Route>
+      <Route path="/dashboard">
+        <Dashboard />
+      </Route>
+      <Route path="/email-triage">
+        <EmailTriagePage />
+      </Route>
+      <Route path="/">
+        <Dashboard />
+      </Route>
+      <Route path="*">
+        <LoginPage />
+      </Route>
     </Switch>
   );
 }

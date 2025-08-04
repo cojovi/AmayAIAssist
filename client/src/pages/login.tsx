@@ -56,7 +56,7 @@ export function LoginPage() {
   const handleGoogleLogin = () => {
     setIsLoading(true);
     // Redirect to Google OAuth
-    window.location.href = '/auth/google';
+    window.location.href = '/api/auth/google';
   };
 
   return (
