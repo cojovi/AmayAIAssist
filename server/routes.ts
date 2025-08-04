@@ -566,9 +566,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get upcoming events and find gaps for productive work
       const events = await googleService.getCalendarEvents();
       const recentEmails = await storage.getRecentEmailTriages(user.id, 5);
+      const pendingTasks = await storage.getPendingTasks(user.id);
       
       // AI analyzes schedule gaps and suggests optimal meeting times
-      const suggestions = await generateProactiveSuggestions(recentEmails, events);
+      const suggestions = await generateProactiveSuggestions({
+        recentEmails: recentEmails.map(email => ({
+          subject: email.subject,
+          sender: email.sender,
+          date: email.createdAt?.toISOString() || new Date().toISOString()
+        })),
+        upcomingMeetings: events.map(event => ({
+          title: event.summary || 'Meeting',
+          date: event.start?.dateTime || event.start?.date || new Date().toISOString(),
+          attendees: event.attendees?.map(a => a.email || '') || []
+        })),
+        pendingTasks: pendingTasks.map(task => ({
+          title: task.title,
+          dueDate: task.dueDate?.toISOString()
+        }))
+      });
       
       res.json({ 
         success: true, 
@@ -938,8 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title,
             description,
             priority: 'normal',
-            googleTaskId: googleTask.data?.id || '',
-            aiGenerated: true
+            googleTaskId: googleTask.data?.id || ''
           });
 
           res.json({ success: true, task, message: 'Draft task approved and created' });
