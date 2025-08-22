@@ -61,6 +61,13 @@ export default function Dashboard() {
     refetchInterval: false,
   });
 
+  // Update user state when userProfile changes
+  useEffect(() => {
+    if (userProfile) {
+      setUser(userProfile);
+    }
+  }, [userProfile]);
+
   // Fetch system stats only if authenticated
   const { data: systemStats } = useQuery({
     queryKey: ["/api/stats"],
@@ -119,8 +126,8 @@ export default function Dashboard() {
     return null;
   }
 
-  // Show loading while fetching user data
-  if (userLoading) {
+  // Show loading while fetching user data or if user is not set yet
+  if (userLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-cyan"></div>
