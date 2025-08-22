@@ -212,6 +212,16 @@ export function AiSuggestions() {
               <button 
                 className="text-xs text-neon-magenta hover:text-pink-400 transition-colors"
                 data-testid="demo-suggestion-1"
+                onClick={() => {
+                  updateSuggestionMutation.mutate({ 
+                    id: 'demo-1', 
+                    accepted: true 
+                  });
+                  toast({
+                    title: "Payment Reminder Set",
+                    description: "Created task to follow up on vendor invoice payment"
+                  });
+                }}
               >
                 <ArrowRight className="w-3 h-3 inline mr-1" />
                 Set payment reminder?
@@ -222,6 +232,16 @@ export function AiSuggestions() {
               <button 
                 className="text-xs text-neon-cyan hover:text-cyan-400 transition-colors"
                 data-testid="demo-suggestion-2"
+                onClick={() => {
+                  updateSuggestionMutation.mutate({ 
+                    id: 'demo-2', 
+                    accepted: true 
+                  });
+                  toast({
+                    title: "Agenda Template Created",
+                    description: "Added task to prepare meeting agenda template"
+                  });
+                }}
               >
                 <ArrowRight className="w-3 h-3 inline mr-1" />
                 Draft agenda template?
@@ -232,6 +252,16 @@ export function AiSuggestions() {
               <button 
                 className="text-xs text-neon-green hover:text-green-400 transition-colors"
                 data-testid="demo-suggestion-3"
+                onClick={() => {
+                  updateSuggestionMutation.mutate({ 
+                    id: 'demo-3', 
+                    accepted: true 
+                  });
+                  toast({
+                    title: "Report Draft Initiated",
+                    description: "Created task to prepare weekly report draft"
+                  });
+                }}
               >
                 <ArrowRight className="w-3 h-3 inline mr-1" />
                 Prepare draft now?

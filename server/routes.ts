@@ -597,6 +597,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update task endpoint (missing PATCH handler)
+  app.patch('/api/tasks/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      
+      // Set up Google credentials
+      if (user.accessToken) {
+        await googleService.setCredentials({
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken
+        });
+      }
+
+      // Update local task
+      const task = await storage.updateTask(id, updates);
+      
+      // Sync with Google Tasks if needed
+      if (task.googleTaskId && updates.completed !== undefined) {
+        if (updates.completed) {
+          await googleService.updateTask(task.googleTaskId, { status: 'completed' });
+        } else {
+          await googleService.updateTask(task.googleTaskId, { status: 'needsAction' });
+        }
+      }
+
+      res.json({ success: true, task });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      res.status(500).json({ error: 'Failed to update task' });
+    }
+  });
+
   app.post('/api/tasks', async (req, res) => {
     try {
       const { title, description, dueDate, priority } = req.body;
@@ -985,6 +1025,255 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error archiving email:', error);
       res.status(500).json({ error: 'Failed to archive email' });
+    }
+  });
+
+  // Find free time endpoint for calendar
+  app.post('/api/calendar/find-free-time', async (req, res) => {
+    try {
+      const { duration = 30, dateRange = 7 } = req.body;
+      
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      
+      if (user.accessToken) {
+        await googleService.setCredentials({
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken
+        });
+      }
+
+      // Get calendar events for the next 7 days
+      const events = await googleService.getCalendarEvents();
+      
+      // Generate free time slots
+      const freeSlots = [];
+      const now = new Date();
+      const endDate = new Date(now.getTime() + (dateRange * 24 * 60 * 60 * 1000));
+      
+      // Business hours: 9 AM to 6 PM
+      for (let d = new Date(now); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dayStart = new Date(d);
+        dayStart.setHours(9, 0, 0, 0);
+        const dayEnd = new Date(d);
+        dayEnd.setHours(18, 0, 0, 0);
+        
+        // Skip weekends
+        if (dayStart.getDay() === 0 || dayStart.getDay() === 6) continue;
+        
+        // Find gaps between meetings
+        const dayEvents = events.filter(event => {
+          const eventStart = new Date(event.start?.dateTime || event.start?.date || '');
+          return eventStart.toDateString() === dayStart.toDateString();
+        }).sort((a, b) => {
+          const aStart = new Date(a.start?.dateTime || a.start?.date || '');
+          const bStart = new Date(b.start?.dateTime || b.start?.date || '');
+          return aStart.getTime() - bStart.getTime();
+        });
+
+        let currentTime = new Date(dayStart);
+        for (const event of dayEvents) {
+          const eventStart = new Date(event.start?.dateTime || event.start?.date || '');
+          const eventEnd = new Date(event.end?.dateTime || event.end?.date || '');
+          
+          // Check if there's a gap before this event
+          if (eventStart.getTime() - currentTime.getTime() >= duration * 60 * 1000) {
+            freeSlots.push({
+              start: new Date(currentTime),
+              end: new Date(eventStart),
+              duration: Math.floor((eventStart.getTime() - currentTime.getTime()) / (60 * 1000))
+            });
+          }
+          currentTime = eventEnd > currentTime ? eventEnd : currentTime;
+        }
+        
+        // Check gap after last event until end of day
+        if (dayEnd.getTime() - currentTime.getTime() >= duration * 60 * 1000) {
+          freeSlots.push({
+            start: new Date(currentTime),
+            end: new Date(dayEnd),
+            duration: Math.floor((dayEnd.getTime() - currentTime.getTime()) / (60 * 1000))
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        freeSlots: freeSlots.slice(0, 10), // Return top 10 slots
+        message: `Found ${freeSlots.length} available time slots`
+      });
+    } catch (error) {
+      console.error('Error finding free time:', error);
+      res.status(500).json({ error: 'Failed to find free time slots' });
+    }
+  });
+
+  // AI Suggestions endpoints
+  app.get('/api/suggestions', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      const suggestions = await storage.getAiSuggestionsByUserId(user.id);
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      res.status(500).json({ error: 'Failed to fetch AI suggestions' });
+    }
+  });
+
+  app.post('/api/suggestions/generate', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      
+      if (user.accessToken) {
+        await googleService.setCredentials({
+          access_token: user.accessToken,
+          refresh_token: user.refreshToken
+        });
+      }
+
+      // Get context for AI suggestions
+      const recentEmails = await storage.getRecentEmailTriages(user.id, 5);
+      const pendingTasks = await storage.getPendingTasks(user.id);
+      const upcomingMeetings = await storage.getUpcomingMeetings(user.id);
+      
+      // Generate suggestions based on Martin AI patterns
+      const suggestions = await generateProactiveSuggestions({
+        recentEmails: recentEmails.map(email => ({
+          subject: email.subject,
+          sender: email.sender,
+          date: email.createdAt?.toISOString() || new Date().toISOString()
+        })),
+        upcomingMeetings: upcomingMeetings.map(meeting => ({
+          title: meeting.title,
+          date: meeting.startTime.toISOString(),
+          attendees: Array.isArray(meeting.attendees) ? meeting.attendees.map((a: any) => a.email || '') : []
+        })),
+        pendingTasks: pendingTasks.map(task => ({
+          title: task.title,
+          dueDate: task.dueDate?.toISOString()
+        }))
+      });
+
+      // Store suggestions in database
+      const storedSuggestions = await Promise.all(
+        suggestions.map(suggestion => 
+          storage.createAiSuggestion({
+            userId: user.id,
+            type: suggestion.type,
+            title: suggestion.title,
+            description: suggestion.description,
+            actionData: suggestion.actionData
+          })
+        )
+      );
+
+      res.json({ 
+        success: true, 
+        suggestions: storedSuggestions,
+        message: `Generated ${storedSuggestions.length} AI suggestions`
+      });
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      res.status(500).json({ error: 'Failed to generate AI suggestions' });
+    }
+  });
+
+  app.patch('/api/suggestions/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { accepted, dismissed } = req.body;
+      
+      const suggestion = await storage.updateAiSuggestion(id, { accepted, dismissed });
+      
+      // If accepted, execute the suggestion action
+      if (accepted && suggestion.actionData) {
+        // Handle different suggestion types
+        switch (suggestion.type) {
+          case 'email_follow_up':
+            // Create a task to follow up
+            await storage.createTask({
+              userId: suggestion.userId,
+              title: `Follow up: ${suggestion.title}`,
+              description: suggestion.description,
+              priority: 'normal'
+            });
+            break;
+          case 'meeting_preparation':
+            // Send agenda template or create prep task
+            await storage.createTask({
+              userId: suggestion.userId,
+              title: `Prepare agenda: ${suggestion.title}`,
+              description: suggestion.description,
+              priority: 'high'
+            });
+            break;
+          case 'task_reminder':
+            // Send Slack reminder
+            const userEmail = suggestion.actionData && typeof suggestion.actionData === 'object' && 'userEmail' in suggestion.actionData 
+              ? (suggestion.actionData as any).userEmail 
+              : '';
+            await sendTaskReminderDM(userEmail || '', suggestion.title);
+            break;
+        }
+      }
+
+      res.json({ success: true, suggestion });
+    } catch (error) {
+      console.error('Error updating suggestion:', error);
+      res.status(500).json({ error: 'Failed to update suggestion' });
+    }
+  });
+
+  // Slack reminder endpoint
+  app.post('/api/slack/reminder', async (req, res) => {
+    try {
+      const { taskId, message } = req.body;
+      
+      const users = await storage.getAllUsers();
+      if (users.length === 0) {
+        return res.status(401).json({ error: 'No authenticated user' });
+      }
+      
+      const user = users[0];
+      let task;
+      
+      if (taskId) {
+        task = await storage.getTaskById(taskId);
+        if (!task) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
+      }
+
+      // Send Slack reminder
+      const reminderMessage = message || (task ? `Reminder: ${task.title}` : 'Task reminder');
+      await sendTaskReminderDM(user.email, reminderMessage);
+      
+      // Update task reminder status if applicable
+      if (task) {
+        await storage.updateTask(task.id, { slackReminderSent: true });
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Slack reminder sent successfully' 
+      });
+    } catch (error) {
+      console.error('Error sending Slack reminder:', error);
+      res.status(500).json({ error: 'Failed to send Slack reminder' });
     }
   });
 

@@ -61,6 +61,29 @@ export function SmartCalendar() {
     }
   });
 
+  const findFreeTimeMutation = useMutation({
+    mutationFn: async (params: { duration?: number; dateRange?: number } = {}) => {
+      const response = await apiRequest("POST", "/api/calendar/find-free-time", params);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const slotsCount = data.freeSlots?.length || 0;
+      toast({
+        title: "Free Time Found",
+        description: `Found ${slotsCount} available time slots`,
+      });
+      // Could open a modal or expand a section to show the slots
+      console.log("Free time slots:", data.freeSlots);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to find free time: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   const formatTime = (dateTime: string) => {
     const date = new Date(dateTime);
     return date.toLocaleTimeString('en-US', {
@@ -227,8 +250,13 @@ export function SmartCalendar() {
                   size="sm"
                   variant="outline"
                   className="border-gray-600/30 text-gray-400 hover:bg-gray-600/30"
+                  onClick={() => findFreeTimeMutation.mutate({ duration: 30, dateRange: 7 })}
+                  disabled={findFreeTimeMutation.isPending}
                   data-testid="button-find-time"
                 >
+                  {findFreeTimeMutation.isPending ? (
+                    <div className="neon-spinner w-4 h-4 mr-2" />
+                  ) : null}
                   Find Free Time
                 </Button>
               </div>
