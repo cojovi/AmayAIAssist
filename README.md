@@ -1,3 +1,115 @@
+
+
+<!-- logo -->
+<p align="center">
+  <img width='300' src="https://flic.kr/p/2rqpb33">
+</p>
+
+<!-- tag line -->
+<h3 align='center'> Working to change the way tech meets construction ! </h3>
+
+<!-- primary badges -------------------------------------->
+<p align="center">
+    <img src='https://flic.kr/p/2rqp3WV.png' height="20" />
+    <img src='https://flic.kr/p/2rqp3Xb.png' height="20" />
+    <img src='https://flic.kr/p/2rqv7QT.png' height="20" />
+    <a href='https://your-chat-link.com'>
+    <img src='https://flic.kr/p/2rquw9m.png' height="20">
+    <img src='https://flic.kr/p/2rqtpxv.png' height="20">
+  </a>
+</p>
+
+<!-- Coverage badges ---------------------------------- -->
+<p align='center'>
+  <img src='https://img.shields.io/badge/Stmts-100%25-success' />
+  <img src='https://img.shields.io/badge/Branch-100%25-success' />
+  <img src='https://img.shields.io/badge/Funcs-100%25-success' />
+  <img src='https://img.shields.io/badge/Lines-100%25-success' />
+</p>
+<br/>
+
+
+
+## Features
+
+☢ Jobsite-ready by tech.cmac — built with CMAC Roofing crews, for crews
+
+⚡ Blazing-fast workflows — fewer clicks, faster close-outs
+
+📺 No double-entry — updates flow across estimates, WOs, and invoices
+
+🌿 Always-fresh data — offline-first sync from roof ↔ office
+
+🧬 Smart forms — auto-validate addresses, pitches, SKUs, and materials
+
+⚛ Modular blocks — plug-in scheduling, materials, QC, and reports
+
+☕ Zero fluff — lightweight, open-source friendly, Docker-ready
+
+<br/>
+
+
+## 🌻 Motivation
+
+Construction workflows aren’t “simple state.” They’re **nested, messy, and real-time**—estimates → change orders → POs → deliveries → install → QC → invoicing. With vanilla React patterns like `useState`, **updating complex state is painful**, and you don’t always get **fresh, immediate** data right after setting it. Cue closure gotchas and extra re-renders.
+
+At **tech.cmac** (CMAC Roofing’s dev team), we built a **truly reactive jobsite state** so foremen, coordinators, and AR all see the same truth—instantly.
+
+Enter `cmac-field-state`
+
+<br/>
+
+## ☢️ What’s `cmac-field-state`?
+
+`cmac-field-state` is a **deeply reactive** state layer.
+Mutate anywhere—shallow or deep—and the UI updates **automatically**.
+
+No `setState`, no cloning, no immer, no ceremony.
+**Just mutate your state. That’s it.**
+
+<br/>
+
+<!-- FAQ 2 -->
+
+<details>
+<summary>Is this magic? How does it work?</summary>
+<br/>
+<code>cmac-field-state</code> uses a **JavaScript Proxy** to recursively wrap your state. When any mutation occurs in the tree, it records the path and schedules an async re-render, keeping components in sync without extra boilerplate.
+</details>
+<br/>
+
+## 💙 Contributing
+
+PRs welcome!
+Found a bug? Open an issue.
+Questions? Ping the **#tech-cmac** channel.
+
+<br/>
+
+## 💖 Like this project?
+
+Leave a ⭐ if this makes your jobsite apps smoother.
+
+<br/>
+
+## 👨‍💻 Authors
+
+### cojovi   |   techpredator   |   alinacode 
+
+[Website](https://www.cmacroofing.com) • [GitHub @cojovi](https://github.com/cojovi)
+
+<br/>
+
+
+
+
+
+
+
+
+
+
+
 # AmayAI - Advanced AI Personal Assistant for Google Workspace
 
 ## Overview
