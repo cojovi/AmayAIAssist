@@ -10,12 +10,12 @@
 
 <!-- primary badges -------------------------------------->
 <p align="center">
-    <img src='https://flic.kr/p/2rqp3WV.png' height="20" />
-    <img src='https://flic.kr/p/2rqp3Xb.png' height="20" />
-    <img src='https://flic.kr/p/2rqv7QT.png' height="20" />
+    <img src='https://flic.kr/p/2rqp3WV' height="20" />
+    <img src='https://flic.kr/p/2rqp3Xb' height="20" />
+    <img src='https://flic.kr/p/2rqv7QT' height="20" />
     <a href='https://your-chat-link.com'>
-    <img src='https://flic.kr/p/2rquw9m.png' height="20">
-    <img src='https://flic.kr/p/2rqtpxv.png' height="20">
+    <img src='https://flic.kr/p/2rquw9m' height="20">
+    <img src='https://flic.kr/p/2rqtpxv' height="20">
   </a>
 </p>
 
